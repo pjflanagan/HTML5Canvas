@@ -1,9 +1,9 @@
 
 
+<!-- saved from url=(0055)https://pjflanagan.github.io/HTML5CanvasAnimations/ani2 -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<html xmlns="http://www.w3.org/1999/xhtml"><head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<link rel="icon" href="favicon.ico"/>
+<link rel="icon" href="https://pjflanagan.github.io/HTML5CanvasAnimations/favicon.ico">
 <title>Ubuntu</title>
 
 <style>
@@ -70,10 +70,10 @@ body {
 }
 </style>
 
-<body>
+</head><body>
 
 <div id="orange"></div><div id="green"></div>
-<canvas id="random" width="1366" height="667"></canvas>
+<canvas id="random" width="1136" height="776"></canvas>
 
 <script>
 window.onload = function(){
@@ -97,26 +97,31 @@ window.onload = function(){
 			this.y = y;
 			this.row = row;
 			this.col = col;
-			this.draw();
-
+			this.radius = 1;
 			this.color = "#FFFFFF";
+
+			this.draw();
 		}
 
 		draw(){
 			ctx.beginPath();
+			ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI, false);
 			ctx.fillStyle = this.color;
-			ctx.fillRect(this.x,this.y,1,1);
+			ctx.fill();
+			//ctx.fillRect(this.x,this.y,1,1);
 		}
 
-		change(color){
+		changeColor(color){
 			this.color = color;
 			this.draw();
+		}
+
+		changeRadius(radius){
+			this.radius = radius;
 		}
 	};
 
 	var Sprite = class Sprite {
-	
-		//x1 x2 y1 y2
 
 		constructor(begin, amount, speed, color, range){
 			this.begin = begin;
@@ -145,8 +150,6 @@ window.onload = function(){
 		}
 		
 		set() {
-			this.end.change(this.color);
-
 			this.begin = this.end;
 			this.x1 = this.begin.x;
 			this.y1 = this.begin.y;
@@ -161,7 +164,6 @@ window.onload = function(){
 		}
 
 		move(){
-		
 			this.amount += this.speed;
 			
 			var add1 = (this.amount > 1) ? 1 : this.amount;
@@ -175,8 +177,18 @@ window.onload = function(){
 			
 			this.draw();
 			
+			//when it is inside the next node
 			if(this.amount >= 1 + this.range){
 				this.set();
+			}
+			//when it arives at the next node
+			else if(this.amount >= 1){
+				this.end.changeColor(this.color);
+				this.end.changeRadius(2);
+			}
+			//when it leaves the first node
+			else if(this.amount >= this.range){
+				this.begin.changeRadius(.5);
 			}
 		}
 	};
@@ -250,6 +262,7 @@ window.onload = function(){
 	var playID = setInterval(run,32);
 }
 </script>
+
 
 
 
