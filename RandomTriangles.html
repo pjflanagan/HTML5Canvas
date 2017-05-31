@@ -1,0 +1,244 @@
+
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+
+
+<title>Peter James Flanagan</title>
+<style>
+* { margin: 0; padding: 0;}
+body {
+	font-family:Tahoma, Geneva, sans-serif;
+	overflow: hidden;
+}
+canvas#c {
+	display: block;
+	width: 100%;
+	height: 100%;
+	background: #CCC;
+}
+</style>
+
+<body>
+<canvas id="c"></canvas>
+
+<script>
+window.onload = function(){
+	canvas = document.getElementById("c");
+	ctx = canvas.getContext("2d");
+
+	W = window.innerWidth, H = window.innerHeight;
+	canvas.width = W;
+	canvas.height = H;
+
+	len = 40;
+
+	function rando(min,max){
+		return Math.random()*(max-min+1)+min;
+	}
+
+	function randomColor() {
+		var rm = 255,
+				gm = 255,
+				bm = 255;
+		var r = Math.round(Math.random()*rm);
+		var g = Math.round(Math.random()*gm);
+		var b = Math.round(Math.random()*bm);
+		var a = 1; //(Math.random()*.5)+.5;
+		var rgba = "rgba("+r+", "+g+", "+b+", "+a+")";
+		return rgba;
+	}
+
+	function drawBackground(){
+		ctx.globalCompositeOperation = "source-over";
+		ctx.fillStyle = "rgba(0, 0, 0, 1)";
+		ctx.fillRect(0, 0, W, H);
+		//ctx.globalCompositeOperation = "lighter";
+	}
+
+	var Point = class Point {
+		constructor(x, y){
+			this.x = Math.floor(x);
+			this.y = Math.floor(y);
+			this.register();
+			this.lines = [];
+		}
+
+		register(){
+			pointList.push(this);
+			points[this.x][this.y] = this;
+		}
+
+		distance(point){
+			return Math.sqrt(
+				Math.pow(this.x - point.x, 2) +
+				Math.pow(this.y - point.y, 2)
+			);
+		}
+
+		numberOfLines(){
+			return lines.length;
+		}
+
+		addLine(line){
+			this.lines.push(line);
+		}
+
+		draw(){
+			ctx.beginPath();
+			ctx.arc(this.x, this.y, 2, 0, 2 * Math.PI, false);
+			ctx.fillStyle = randomColor();
+			ctx.fill();
+			ctx.closePath();
+		}
+	};
+
+	var Line = class Line {
+		constructor(pointA, pointB){
+			this.A = pointA;
+			this.B = pointB;
+			this.A.addLine(this);
+			this.B.addLine(this);
+			this.findEquation();
+			this.triangles = []; //should have two
+		}
+
+		findEquation(){
+			this.slope = (this.B.y - this.A.y) / (this.B.x - this.A.x);
+			this.intercept = this.A.y - this.slope * this.A.x;
+			this.findAngle();
+		}
+
+		findAngle(){
+			this.angle = Math.tan(this.slope);
+		}
+
+		hasTriangles(){
+			if(this.triangles.length == 2)
+				return true;
+			return false;
+		}
+
+		addTriangle(triangle){
+			this.triangles.push(triangle);
+		}
+
+		isPointBelow(centroid){
+			return centroid.Oy > this.slope * centroid.Ox + this.intercept;
+		}
+
+		draw(){
+			ctx.beginPath();
+			ctx.moveTo(this.A.x, this.A.y);
+			ctx.lineTo(this.B.x, this.B.y);
+			ctx.strokeStyle = "#000";
+			ctx.stroke();
+		}
+	};
+
+	var Triangle = class Triangle {
+		constructor(line1, line2, line3){
+			this.lines = [line1, line2, line3];
+			for(var i = 0; i < 3; i++)
+				this.lines[i].addTriangle(this);
+			this.points = [line1.A, line2.A, line3.A];
+			this.findCentroid();
+			this.setColor();
+		}
+
+		findCentroid(){
+			var Ox = 0, Oy = 0;
+			for(var i = 0; i < 3; i++){
+				Ox += this.lines[i].A.x;
+				Oy += this.lines[i].A.y;
+			}
+			this.centroid = {
+				"Ox" : Math.floor(Ox/3),
+				"Oy" : Math.floor(Oy/3)
+			}
+		}
+
+		setColor(){
+			this.color = randomColor();
+			this.draw();
+		}
+
+		draw(){
+			ctx.fillStyle = this.color;
+			ctx.beginPath();
+			ctx.moveTo(this.points[0].x, this.points[0].y);
+			ctx.lineTo(this.points[1].x, this.points[1].y);
+			ctx.lineTo(this.points[2].x, this.points[2].y);
+			ctx.closePath();
+			ctx.fill();
+		}
+	};
+	
+	function chooseRandomPoint(line){
+		console.log(line);
+		line.draw();
+		pointBelow = line.isPointBelow(triangle.centroid); //then go the oposite direction
+		console.log(pointBelow);
+		randomInt = rando(len*.5, len);
+		console.log(randomInt);
+		randomX = (line.A.x < line.B.x) ? rando(line.A.x - len/4, line.B.x + len/4) : rando(line.B.x - len/4, line.A.x + len/4);
+		console.log(randomX);
+		intercept = (pointBelow) ? line.intercept - randomInt : line.intercept + randomInt;
+		console.log(intercept);
+		calcY = line.slope * randomX + line.intercept;
+		console.log(calcY);
+		return new Point(randomX, calcY);
+	}
+
+	function choosePoint(line){
+		triangle = line.triangles[0]; //get the line's triangle
+		//if there is a point on another triangle in the radius, and that point only has two lines,
+		for(var i = 0; i < pointList.length; i++){
+			//choose that point, remove the line that is added to the triangle from
+			if(pointList[i] != line.A && pointList[i].distance(line.A) <= len/2){
+				return pointList[i];
+			}
+		}
+		
+		return chooseRandomPoint(line);
+	}
+
+	function drawNext(){
+		line = lineQueue.shift();
+		point = choosePoint(line);
+		line2 = new Line(point, line.A);
+		line3 = new Line(line.B, point);
+
+		triangles.push(new Triangle(line, line2, line3));
+
+		lineQueue.push(line2);
+		lineQueue.push(line3); //avoid duplicates here
+	}
+
+	//////////////////////////////////////////////////////////////////////////////
+	pointList = [];
+	points = new Array(W);
+	for (var i = 0; i < W; i++) {
+	  points[i] = new Array(H).fill(false);
+	}
+	triangles = [];
+
+	point1 = new Point(W/2+20, H/2-50);
+	point2 = new Point(W/2+50, H/2-20);
+	point3 = new Point(W/2-15, H/2+20);
+
+	line1 = new Line(point1, point2);
+	line2 = new Line(point2, point3);
+	line3 = new Line(point3, point1);
+
+	triangles.push(new Triangle(line1, line2, line3));
+
+	lineQueue = triangles[0].lines;
+
+
+	drawNext();
+}
+
+</script>
+
+</body></html>
