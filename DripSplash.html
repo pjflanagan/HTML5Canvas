@@ -1,0 +1,111 @@
+
+
+<!-- saved from url=(0055)https://pjflanagan.github.io/HTML5CanvasAnimations/ani2 -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<link rel="icon" href="https://pjflanagan.github.io/HTML5CanvasAnimations/favicon.ico">
+<title>Drip Splash</title>
+
+<style>
+* { margin: 0; padding: 0;}
+body {
+	font-family:Tahoma, Geneva, sans-serif;
+	overflow: hidden;	
+	background:#300a24;
+}
+#waves {
+	display: block;
+	background: #240a44;
+	z-index:-1;
+}
+
+</style>
+
+</head><body>
+
+<div id="orange"></div><div id="green"></div>
+<canvas id="waves" width="1136" height="776"></canvas>
+
+<script>
+window.onload = function(){
+	
+	var canvas = document.getElementById("waves");
+	var ctx = canvas.getContext("2d");
+	
+	var W = window.innerWidth, H = window.innerHeight;
+	canvas.width = W;
+	canvas.height = H;
+
+	var waves = [];
+	
+	var Wave = class Wave {
+		constructor(x, y, row, col){
+			this.x = x;
+			this.y = y;
+			this.row = row;
+			this.col = col;
+			this.radius = 1;
+			this.color = "#FFFFFF";
+
+			this.draw();
+		}
+
+		draw(){
+			ctx.beginPath();
+			ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI, false);
+			ctx.fillStyle = this.color;
+			ctx.fill();
+			//ctx.fillRect(this.x,this.y,1,1);
+		}
+
+		changeColor(color){
+			this.color = color;
+			this.draw();
+		}
+
+		changeRadius(radius){
+			this.radius = radius;
+		}
+	};
+
+	function randomColor() {
+		var r = Math.round(Math.random()*200 + 55); //must add to 255
+		var g = Math.round(Math.random()*200 + 55);
+		var b = Math.round(Math.random()*200 + 55);
+		var a = (Math.random()*.3)+.7; //must add to 1
+		var rgba = "rgba("+r+", "+g+", "+b+", "+a+")"; 
+		return rgba;
+	}
+	
+	function drawBackground(){
+		ctx.globalCompositeOperation = "source-over";
+		ctx.fillStyle = "rgba(48, 10, 36, .2)";
+		ctx.fillRect(0, 0, W, H);
+	}
+
+	function drawWaves_init(size){
+		waves.push(new Wave(y));	
+	}
+
+	function drawWaves(){
+		for(var i = 0; i < dots.length; i++){
+			dots[i].draw();
+		}
+	}
+
+	function run() {
+		drawBackground();
+		drawWaves();
+	}
+
+	drawBackground();
+	drawWaves_init(3);
+
+	var playID = setInterval(run,32);
+}
+</script>
+
+
+
+
+</body></html>
