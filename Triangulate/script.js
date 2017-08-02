@@ -1,3 +1,6 @@
+
+// ------------------------------------- GLOBAL --------------------------------
+
 canvas = document.getElementById("c");
 ctx = canvas.getContext("2d");
 
@@ -8,6 +11,13 @@ canvas.height = H;
 len = 18;
 lenx = Math.floor(len/2);
 leny = Math.floor(len * Math.sqrt(3) / 2);
+
+points = new PointArray();
+triangles = [];
+point0 = new Point(0,0);
+img = new Image();
+
+// ------------------------------------- RANDOMS -------------------------------
 
 function rando(min,max){
 	return Math.random()*(max-min+1)+min;
@@ -24,6 +34,8 @@ function randomColor() {
 	var rgba = "rgba("+r+", "+g+", "+b+", "+a+")";
 	return rgba;
 }
+
+// ------------------------------------- CLASSES -------------------------------
 
 var Point = class Point {
 	constructor(x, y){
@@ -122,6 +134,8 @@ var Triangle = class Triangle {
 	}
 };
 
+// ------------------------------------- DRAW ----------------------------------
+
 function drawNext(){
 	if(points.none()){
 		//clearTimeout(playID);
@@ -180,39 +194,56 @@ function drawBunch(){
 	}
 }
 
-points = new PointArray();
-triangles = [];
+// ------------------------------------- FLOW ----------------------------------
 
-point0 = new Point(0,0);
+function previewFile(){
+  var preview = document.querySelector('img'); //selects the query named img
+  var file    = document.querySelector('input[type=file]').files[0]; //sames as here
+  var reader  = new FileReader();
 
-img = new Image();
-img.crossOrigin = "Anonymous";
-img.onload = function() {
-	naturalHeight = img.height;
-	naturalWidth = img.width;
+  reader.onloadend = function () {
+    preview.src = reader.result;
+		$("#upload").remove();
+		start();
+  }
+
+  if (file) {
+    reader.readAsDataURL(file); //reads the data as a URL
+  }
+  else {
+    preview.src = "";
+  }
 }
-img.src = document.getElementById('bg').src;
 
-
-window.onload = function(){
-	if(W > 700){
-		drawBackground();
-		setInterval(drawBunch, 16);
-	}
-}
-
-$(window).resize(function() {
+function start(){
 	if(W > 700){
 		W = window.innerWidth, H = (window.innerHeight < 500) ? 500 : window.innerHeight;
 		canvas.width = W;
 		canvas.height = H;
 
+		setImage();
+
 		points = new PointArray();
 		triangles = [];
-
 		point0 = new Point(0,0);
 
 		drawBackground();
 		setInterval(drawBunch, 16);
 	}
+}
+
+function setImage(){
+	$("#bg").load(location.href + " #bg");
+	img.crossOrigin = "Anonymous";
+	img.onload = function() {
+		naturalHeight = img.height;
+		naturalWidth = img.width;
+	}
+	img.src = document.getElementById('bg').src;
+}
+
+// ------------------------------------- LISTENERS -----------------------------
+
+$(window).resize(function() {
+	start();
 });
