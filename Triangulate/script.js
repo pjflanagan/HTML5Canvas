@@ -199,7 +199,8 @@ function previewFile(){
   reader.onloadend = function () {
     preview.src = reader.result;
 		$("#upload").remove();
-		start();
+		$(window).trigger('resize');
+		//start();
   }
 
   if (file) {
@@ -211,7 +212,6 @@ function previewFile(){
 }
 
 function start(){
-	//$(window).trigger('resize');
 	if(W > 700){
 		W = window.innerWidth, H = (window.innerHeight < 500) ? 500 : window.innerHeight;
 		canvas.width = W;
