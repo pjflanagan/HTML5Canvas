@@ -173,11 +173,11 @@ function drawNext(){
 }
 
 function drawBackground(){
-	var imgWidth =  H * naturalWidth / naturalHeight;
+	var imgWidth =  H * img.width / img.height;
 	var imgHeight = H;
 	if(imgWidth < W){
 		imgWidth =  W;
-		imgHeight = W * naturalHeight / naturalWidth;
+		imgHeight = W * img.height / img.width;
 	}
 	ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
 }
@@ -237,6 +237,8 @@ function setImage(){
 	}
 	img.src = document.getElementById('bg').src;
 }
+
+// ------------------------------------- GLOBALS -------------------------------
 
 points = new PointArray();
 triangles = [];
