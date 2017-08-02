@@ -211,7 +211,7 @@ function previewFile(){
 }
 
 function start(){
-	$(window).trigger('resize');
+	//$(window).trigger('resize');
 	if(W > 700){
 		W = window.innerWidth, H = (window.innerHeight < 500) ? 500 : window.innerHeight;
 		canvas.width = W;
