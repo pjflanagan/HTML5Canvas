@@ -199,8 +199,7 @@ function previewFile(){
   reader.onloadend = function () {
     preview.src = reader.result;
 		$("#upload").remove();
-		$(window).trigger('resize');
-		//start();
+		start();
   }
 
   if (file) {
@@ -229,13 +228,12 @@ function start(){
 }
 
 function setImage(){
-	$("#bg").load(location.href + " #bg");
 	img.crossOrigin = "Anonymous";
 	img.onload = function() {
 		naturalHeight = img.height;
 		naturalWidth = img.width;
 	}
-	img.src = document.getElementById('bg').src;
+	img.src = document.querySelector('img').src;
 }
 
 // ------------------------------------- GLOBALS -------------------------------
