@@ -199,15 +199,24 @@ function previewFile(){
   reader.onloadend = function () {
     preview.src = reader.result;
 		$("#upload").remove();
-		start();
+		setImage();
   }
 
-  if (file) {
-    reader.readAsDataURL(file); //reads the data as a URL
-  }
-  else {
-    preview.src = "";
-  }
+  if (file) reader.readAsDataURL(file); //reads the data as a URL
+  else preview.src = "";
+}
+
+function setImage(){
+	img.crossOrigin = "Anonymous";
+	 img.onload = function() {
+	 	naturalHeight = img.height;
+	 	naturalWidth = img.width;
+		console.log(img);
+		console.log(naturalWidth);
+		console.log(naturalHeight);
+		start();
+	}
+	img.src = document.querySelector('img').src;
 }
 
 function start(){
@@ -216,8 +225,6 @@ function start(){
 		canvas.width = W;
 		canvas.height = H;
 
-		setImage();
-
 		points = new PointArray();
 		triangles = [];
 		point0 = new Point(0,0);
@@ -225,15 +232,6 @@ function start(){
 		drawBackground();
 		setInterval(drawBunch, 16);
 	}
-}
-
-function setImage(){
-	img.crossOrigin = "Anonymous";
-	img.onload = function() {
-		naturalHeight = img.height;
-		naturalWidth = img.width;
-	}
-	img.src = document.querySelector('img').src;
 }
 
 // ------------------------------------- GLOBALS -------------------------------
