@@ -112,13 +112,13 @@ var Triangle = class Triangle {
 	}
 
 	draw(){
-		if(this.points[0].x < W/3){
+		/*if(this.points[0].x < W/3){
 		}
 		else if(this.points[0].x > 3*W/4){
 			return;
 		}
 		else if(rando(0, W) < this.points[0].x)
-			return;
+			return;*/
 		ctx.fillStyle = this.color;
 		ctx.beginPath();
 		ctx.moveTo(this.points[0].x, this.points[0].y);
