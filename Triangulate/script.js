@@ -134,6 +134,7 @@ var Triangle = class Triangle {
 function drawNext(){
 	if(points.none()){
 		clearTimeout(playID);
+		done();
 		return false;
 	}
 	point = points.top();
@@ -196,15 +197,13 @@ triangles = [];
 point0 = new Point(0,0);
 img = new Image();
 
-/*
-https://stackoverflow.com/questions/17397319/save-canvas-as-jpg-to-desktop
-<a id="downloadLnk" download="YourFileName.jpg">Download as image</a>
+// https://stackoverflow.com/questions/17397319/save-canvas-as-jpg-to-desktop
 function download() {
     var dt = canvas.toDataURL('image/jpeg');
     this.href = dt;
 };
 downloadLnk.addEventListener('click', download, false);
-*/
+
 
 function previewFile(){
   var preview = document.querySelector('img'); //selects the query named img
@@ -247,6 +246,12 @@ function start(){
 		drawBackground();
 		playID = setInterval(drawBunch, 16);
 	}
+}
+
+function done(){
+	$("#downloadLnk").css({
+		display: "inline-block"
+	});
 }
 
 // ------------------------------------- LISTENERS -----------------------------

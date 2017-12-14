@@ -51,6 +51,28 @@
 		.inputfile + label {
 			cursor: pointer; /* "hand" cursor */
 		}
+
+		#downloadLnk {
+			font-size: 1.25em;
+			font-weight: 700;
+			color: white;
+			background-color: #6887eb;
+			display: none;
+			left: 50%;
+			top: 50%;
+			margin-left: -120px;
+			margin-top: -26px;
+			position: absolute;
+			width: 220px;
+			height: 18px;
+			padding: 14px 20px 20px 20px;
+			text-align: center;
+			text-decoration: none;
+		}
+		#downloadLnk {
+			background-color: #466ae2;
+			cursor: pointer; /* "hand" cursor */
+		}
 		</style>
 	</head>
 	<body>
@@ -58,6 +80,8 @@
 			<input type="file" name="file" id="upload" class="inputfile" onchange="previewFile()" />
 			<label for="upload">Choose a file...</label>
 		</span>
+		<a id="downloadLnk" download="triangulated.jpg">Download image</a>
+		
 
 		<canvas id="c"></canvas>
 		<img id="bg" />
