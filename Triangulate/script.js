@@ -12,11 +12,6 @@ len = 18;
 lenx = Math.floor(len/2);
 leny = Math.floor(len * Math.sqrt(3) / 2);
 
-points = new PointArray();
-triangles = [];
-point0 = new Point(0,0);
-img = new Image();
-
 // ------------------------------------- RANDOMS -------------------------------
 
 function rando(min,max){
@@ -195,6 +190,11 @@ function drawBunch(){
 }
 
 // ------------------------------------- FLOW ----------------------------------
+
+points = new PointArray();
+triangles = [];
+point0 = new Point(0,0);
+img = new Image();
 
 /*
 https://stackoverflow.com/questions/17397319/save-canvas-as-jpg-to-desktop
