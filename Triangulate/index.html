@@ -18,16 +18,53 @@
 			display: block;
 			width: 100%;
 			height: 100%;
-			background: #CCC;
+			background: #becefc;
+		}
+		.inputfile {
+			width: 0.1px;
+			height: 0.1px;
+			opacity: 0;
+			overflow: hidden;
+			position: absolute;
+			z-index: -1;
+		}
+		.inputfile + label {
+			font-size: 1.25em;
+			font-weight: 700;
+			color: white;
+			background-color: #6887eb;
+			display: inline-block;
+			left: 50%;
+			top: 50%;
+			margin-left: -120px;
+			margin-top: -26px;
+			position: absolute;
+			width: 220px;
+			height: 18px;
+			padding: 14px 20px 20px 20px;
+			text-align: center;
+		}
+		.inputfile:focus + label,
+		.inputfile + label:hover {
+			background-color: #466ae2;
+		}
+		.inputfile + label {
+			cursor: pointer; /* "hand" cursor */
 		}
 		</style>
 	</head>
 	<body>
-		<input id="upload" type="file" onchange="previewFile()">
+		<span id="hide">
+			<input type="file" name="file" id="upload" class="inputfile" onchange="previewFile()" />
+			<label for="upload">Choose a file...</label>
+		</span>
+
 		<canvas id="c"></canvas>
 		<img id="bg" />
 
 		<script src="script.js"></script>
+		<script src="dropzone.js"></script>
+		
 
 
 	</body>

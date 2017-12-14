@@ -12,6 +12,11 @@ len = 18;
 lenx = Math.floor(len/2);
 leny = Math.floor(len * Math.sqrt(3) / 2);
 
+points = new PointArray();
+triangles = [];
+point0 = new Point(0,0);
+img = new Image();
+
 // ------------------------------------- RANDOMS -------------------------------
 
 function rando(min,max){
@@ -133,7 +138,7 @@ var Triangle = class Triangle {
 
 function drawNext(){
 	if(points.none()){
-		//clearTimeout(playID);
+		clearTimeout(playID);
 		return false;
 	}
 	point = points.top();
@@ -191,6 +196,16 @@ function drawBunch(){
 
 // ------------------------------------- FLOW ----------------------------------
 
+/*
+https://stackoverflow.com/questions/17397319/save-canvas-as-jpg-to-desktop
+<a id="downloadLnk" download="YourFileName.jpg">Download as image</a>
+function download() {
+    var dt = canvas.toDataURL('image/jpeg');
+    this.href = dt;
+};
+downloadLnk.addEventListener('click', download, false);
+*/
+
 function previewFile(){
   var preview = document.querySelector('img'); //selects the query named img
   var file    = document.querySelector('input[type=file]').files[0]; //sames as here
@@ -198,7 +213,7 @@ function previewFile(){
 
   reader.onloadend = function () {
     preview.src = reader.result;
-		$("#upload").remove();
+		$("#hide").remove();
 		setImage();
   }
 
@@ -230,19 +245,13 @@ function start(){
 		point0 = new Point(0,0);
 
 		drawBackground();
-		setInterval(drawBunch, 16);
+		playID = setInterval(drawBunch, 16);
 	}
 }
-
-// ------------------------------------- GLOBALS -------------------------------
-
-points = new PointArray();
-triangles = [];
-point0 = new Point(0,0);
-img = new Image();
 
 // ------------------------------------- LISTENERS -----------------------------
 
 $(window).resize(function() {
+	clearTimeout(playID);
 	start();
 });
