@@ -2,13 +2,14 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-  BIRD_COUNT: 100,
-  RESET_LEADER_INTERVAL: 1 * 1000
+  BIRD_COUNT: 1000,
+  LEADER_COUNT: 12,
+  RESET_LEADER_INTERVAL: 300
 }
 
 const BIRD = {
-  WIDTH: 4,
   HEIGHT: 12,
+  ANGLE: -.5,
   VELOCITY_MAX: 5
 }
 
@@ -39,14 +40,15 @@ class World {
     this.H = height;
     this.D = (width + height) / 2;
     this.birds = [];
+    this.leaders = [];
   }
 
-  // SETUP
+  // INIT
 
   init () {
     this.drawBackground();
     this.initBirds();
-    this.resetLeader();
+    this.initLeaders();
     this.drawBirds();
   }
 
@@ -56,14 +58,13 @@ class World {
     }
   }
 
-  resetLeader() {
-    // TODO: have several different leaders
-    this.leader = rando(0, WORLD.BIRD_COUNT)
-    this.birds[this.leader].to = this.getRandomCoords();
-  }
-
-  isLeader(i) {
-    return _.includes(this.leaders, i);
+  initLeaders() {
+    for(let i = 0; i < WORLD.LEADER_COUNT; ++i) {
+      const newLeader = rando(0, WORLD.BIRD_COUNT);
+      this.leaders.push(newLeader)
+      this.birds[newLeader].to = this.getRandomCoords();
+    }
+    this.cycleLeaders();
   }
 
   // ANIMATE
@@ -74,13 +75,25 @@ class World {
       world.animate();
     }, 32);
     setInterval(function() {
-      world.resetLeader()
+      world.cycleLeaders()
     }, WORLD.RESET_LEADER_INTERVAL);
   }
 
   animate() {
     this.drawBackground();
     this.drawBirds();
+  }
+
+  cycleLeaders() {
+    this.leaders.shift();
+
+    const newLeader = rando(0, WORLD.BIRD_COUNT);
+    this.leaders.push(newLeader)
+
+    this.birds[newLeader].to = this.getRandomCoords();
+    for (let i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
+      this.birds[i].setLeader(this.leaders[rando(0, WORLD.LEADER_COUNT)]);
+    }
   }
 
   // DRAW
@@ -93,7 +106,7 @@ class World {
   
   drawBirds() {
     // TODO: sort the birds first to not draw on top
-    for(var i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
+    for(let i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
       this.birds[i].draw();
       this.birds[i].move();
     }
@@ -109,8 +122,12 @@ class World {
     };
   }
 
-  getLeader() {
-    return this.birds[this.leader];
+  getBird(i) {
+    return this.birds[i];
+  }
+
+  isLeader(i) {
+    return _.includes(this.leaders, i);
   }
 }
 
@@ -123,6 +140,8 @@ class Bird {
     this.x = x;
     this.y = y;
     this.z = z;
+
+    this.leader = 0;
     this.to = world.getRandomCoords();
 
     this.i = i;
@@ -134,8 +153,8 @@ class Bird {
   }
 
   move() {
-    let { i, x, y, z } = this.world.getLeader();
-    if (i === this.i) {
+    let { x, y, z } = this.world.getBird(this.leader);
+    if (this.world.isLeader(this.i)) {
       x = this.to.x;
       y = this.to.y;
       z = this.to.z;
@@ -155,8 +174,8 @@ class Bird {
   draw() {
     this.ctx.beginPath();
 		this.ctx.moveTo(this.x, this.y);
-		this.ctx.lineTo(this.x - Math.cos(this.a) * BIRD.WIDTH , this.y + Math.sin(this.a) * BIRD.HEIGHT);
-		this.ctx.lineTo(this.x + Math.cos(this.a) * BIRD.WIDTH, this.y + Math.sin(this.a) * BIRD.HEIGHT);
+		this.ctx.lineTo(this.x + Math.sin(this.a - BIRD.ANGLE) * BIRD.HEIGHT, this.y + Math.cos(this.a - BIRD.ANGLE) * BIRD.HEIGHT);
+		this.ctx.lineTo(this.x + Math.cos(this.a + BIRD.ANGLE) * BIRD.HEIGHT, this.y - Math.sin(this.a + BIRD.ANGLE) * BIRD.HEIGHT);
 		this.ctx.fillStyle = this.getColor();
 		this.ctx.fill();
 		this.ctx.closePath();
@@ -164,6 +183,10 @@ class Bird {
 
   getColor() {
     return this.color;
+  }
+
+  setLeader(i) {
+    this.leader = i;
   }
 }
 
