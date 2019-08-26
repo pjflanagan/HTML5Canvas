@@ -1,15 +1,11 @@
 
-// DEBUG -------------------------------------------------------------------------------------------
-
-const run = true;
-
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
   BIRD_COUNT: 1000,
   CLOSE_TO_POINT_DISTANCE: 40,
   LEADER_POINT_BOUNDS: 140,
-  CLOSE_TO_EDGE_BOUNDS: 100
+  CLOSE_TO_EDGE_BOUNDS: 40
 }
 
 const BIRD = {
@@ -19,8 +15,8 @@ const BIRD = {
   // SPEED
   BEZIER_DISTANCE: 40,
   VELOCITY_MAX: 8,
-  ANGULAR_VELOCITY_MIN: .04,
-  ANGULAR_VELOCITY_MAX: .1,
+  ANGULAR_VELOCITY_MIN: .08, // .04,
+  ANGULAR_VELOCITY_MAX: .28, // .1,
   // BRAIN
   CHANGE_MIND_TIMEOUT_MIN: 500,
   CHANGE_MIND_TIMEOUT_MAX: 2000,
@@ -32,8 +28,12 @@ const BIRD = {
 
 // GLOBAL ------------------------------------------------------------------------------------------
 
-function rando(min,max){
-  return Math.floor(Math.random()*max)+min;	
+function randoInt(min, max){
+  return Math.floor(Math.random()*(max - min)) + min;
+}
+
+function randoDec(min, max){
+  return Math.random()*(max - min) + min;
 }
 
 function randomBool() {
@@ -66,6 +66,7 @@ class World {
     this.D = (width + height) / 2;
     this.birds = [];
     this.leaders = [];
+    this.max = distance({ x: this.W, y: this.H, z:this.D }, { x:0, y:0, z:0 });
   }
 
   // INIT
@@ -88,7 +89,7 @@ class World {
     const world = this;
 
     for(let i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
-      if(run) this.birds[i].run(); // starts the bird brain
+      this.birds[i].run(); // starts the bird brain
     }
 
     this.interval = setInterval(function() {
@@ -112,15 +113,23 @@ class World {
 		this.ctx.fillStyle = "#FFF"; // "#1c1c1c";
 		this.ctx.fill();
   }
+
+  drawPoint({x,y}) {
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, WORLD.CLOSE_TO_POINT_DISTANCE, 0, 2 * Math.PI, false);
+    this.ctx.fillStyle = '#0004';
+    this.ctx.fill();
+  }
   
   drawBirds() {
-    // const sortedBirds = _.sortBy(this.birds, function(b){
-    //   return -b.z;
-    // })
-    const sortedBirds = this.birds;
+    const sortedBirds = _.sortBy(this.birds, function(b){
+      return -b.z;
+    })
+    // const sortedBirds = this.birds;
     for(let i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
-      sortedBirds[i].draw();
-      sortedBirds[i].move();
+      const bird = sortedBirds[i];
+      bird.draw();
+      bird.move();
     }
   }
 
@@ -128,17 +137,17 @@ class World {
 
   getRandomCoords() {
     return {
-      x: rando(0, this.W),
-      y: rando(0, this.H),
-      z: rando(0, this.D)
+      x: randoInt(0, this.W),
+      y: randoInt(0, this.H),
+      z: randoInt(0, this.D)
     };
   }
 
   getRandomLeaderCoords() {
     return {
-      x: rando(WORLD.LEADER_POINT_BOUNDS, this.W - WORLD.LEADER_POINT_BOUNDS),
-      y: rando(WORLD.LEADER_POINT_BOUNDS, this.H - WORLD.LEADER_POINT_BOUNDS),
-      z: rando(WORLD.LEADER_POINT_BOUNDS, this.D - WORLD.LEADER_POINT_BOUNDS)
+      x: randoInt(WORLD.LEADER_POINT_BOUNDS, this.W - WORLD.LEADER_POINT_BOUNDS),
+      y: randoInt(WORLD.LEADER_POINT_BOUNDS, this.H - WORLD.LEADER_POINT_BOUNDS),
+      z: randoInt(WORLD.LEADER_POINT_BOUNDS, this.D - WORLD.LEADER_POINT_BOUNDS)
     }
   }
 
@@ -155,11 +164,15 @@ class World {
   }
 
   randomBird() {
-    return rando(0, WORLD.BIRD_COUNT);
+    return randoInt(0, WORLD.BIRD_COUNT);
   }
 
   zScale(z) {
     return .5 * (z / this.D) + .5;
+  }
+
+  getMax(){
+    return this.max;
   }
 }
 
@@ -178,13 +191,13 @@ class Bird {
     this.world = world;
 
     const { x , y, z } = this.world.getRandomCoords();
-    this.aXY = rando(0, 2 * Math.PI);
-    this.aZ = rando(0, 2 * Math.PI);
+    this.aXY = randoDec(0, 2 * Math.PI);
+    this.aZ = randoDec(0, 2 * Math.PI);
     this.x = x;
     this.y = y;
     this.z = z;
     this.v = BIRD.VELOCITY_MAX;
-    this.va = rando(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX);
+    this.va = randoDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX);
     this.color = randomColor();
 
     this.isFollowing = randomBool();
@@ -197,7 +210,7 @@ class Bird {
     const bird = this;
     setTimeout(function() {
       bird.changeTo();
-    }, rando(BIRD.CHANGE_MIND_TIMEOUT_MIN, BIRD.CHANGE_MIND_TIMEOUT_MAX));
+    }, randoInt(BIRD.CHANGE_MIND_TIMEOUT_MIN, BIRD.CHANGE_MIND_TIMEOUT_MAX));
   }
 
   changeTo() {
@@ -205,6 +218,7 @@ class Bird {
       if (this.isFollowing && Math.random() < BIRD.CHANGE_FROM_IS_FOLLOWING_LIKELIHOOD) {
         this.isFollowing = false;
         this.to = this.world.getRandomLeaderCoords();
+        this.va = randoDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX)
       } else if (this.isFollowing && Math.random() < BIRD.CHANGE_LEADER_LIKELIHOOD) {
         this.leader = this.world.randomBird();
       } else if (!this.isFollowing && Math.random() < BIRD.CHANGE_FROM_NOT_FOLLOWING_LIKELIHOOD){
@@ -224,37 +238,51 @@ class Bird {
     return distance({ x: this.x, y: this.y, z: this.to.z }, this.to ) < WORLD.CLOSE_TO_POINT_DISTANCE; // TODO: use z dim properly
   }
 
-  panic() {
+  chooseNewPoint(isPanic) {
     this.isFollowing = false;
-    this.isPanic = true;
+    this.isPanic = isPanic;
     this.to = this.world.getRandomLeaderCoords();
+    this.va = randoDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX)
   }
 
   getTo() {
     // if not following someone
     if(!this.isFollowing) {
+
+      // if close to the point they chose
       if(this.isCloseToPoint()) {
-        this.isPanic = false;
-        this.to = this.world.getRandomLeaderCoords();
+        this.chooseNewPoint(false);
       }
+
+      // go to the point they chose
       return this.to;
     }
+
     // if follwoing someone but close to edge
     if(this.isCloseToEdge()) {
-      this.panic();
+      this.chooseNewPoint(true); // panic
       return this.to;
     }
+
     // otherwise return the bird they are following
     return this.world.getBird(this.leader);
   }
 
-  move() {
-    let { x, y, z } = this.getTo();
-    const dx = this.x - x, dy = this.y - y; // , dz = this.z - z;
-    const dir = 1.0 * Math.atan2(dy, dx);
-    const ddir = this.aXY - dir
+  getAngleTo(to) {
+    const dx = this.x - to.x, dy = this.y - to.y; // , dz = this.z - z;
+    return -1.0 * Math.atan2(dx, dy) + Math.PI / 2;
+  }
 
-    this.aXY = Math.abs(ddir) < 0.5 ? this.aXY : this.aXY - ddir * this.va;
+  getDeltaAngle(to) {
+    const a = this.getAngleTo(to);
+    return this.va * Math.sign(this.aXY - a);
+  }
+
+  move() {
+    const to = this.getTo();
+
+    this.aXY = this.aXY - this.getDeltaAngle(to);
+    // this.aXY = this.getAngleTo(to);
     // this.aZ = this.aZ - Math.atan2(dy, dz) * this.va;
 
     const vx = Math.cos(this.aXY) * this.v;
@@ -278,11 +306,13 @@ class Bird {
   }
 
   getColor() {
-    return "#1c1c1c"; // `rgba(255, 255, 255, ${this.world.zScale(this.z)})`;
-  }
-
-  setLeader(i) {
-    this.leader = i;
+    // if (this.isFollowing) {
+    //   return '#0F0';
+    // } else if (this.isPanic) {
+    //   return '#F00';
+    // }
+    // return '#00F';
+    return `rgba(0, 0, 0, ${this.world.zScale(this.z)})`;
   }
 }
 
@@ -299,6 +329,6 @@ window.onload = function(){
 
   const world = new World(ctx, W, H);
   world.init();
-  if(run) world.run();
+  world.run();
 }
 
