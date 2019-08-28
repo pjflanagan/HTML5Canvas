@@ -2,7 +2,7 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-	BIRD_COUNT: 2000,
+	BIRD_COUNT: 500,
 	CLOSE_TO_POINT_DISTANCE: 40,
 	LEADER_POINT_BOUNDS: 140,
 	CLOSE_TO_EDGE_BOUNDS: 40
@@ -14,7 +14,7 @@ const BIRD = {
 	ANGLE: -.25,
 	// SPEED
 	BEZIER_DISTANCE: 40,
-	VELOCITY_MAX: 6,
+	VELOCITY_MAX: 4,
 	ANGULAR_VELOCITY_MIN: .08, // .04,
 	ANGULAR_VELOCITY_MAX: .28, // .1,
 	// BRAIN
@@ -232,6 +232,9 @@ class Bird {
 		}, randomInt(BIRD.CHANGE_MIND_TIMEOUT_MIN, BIRD.CHANGE_MIND_TIMEOUT_MAX));
 	}
 
+
+  // BRAIN: if they see someone follow them, if they see nobody then go back towards
+  // average of the whole group
 	changeTo() {
 		if (this.isFollowing) {
 			// if following someone but might change to not following someone
@@ -287,7 +290,7 @@ class Bird {
 
 	getDeltaAngle(to) {
 		const { aXY, aZ } = this.getAngleTo(to);
-		return { daXY: this.va * Math.sign(this.aXY - aXY), daZ: this.va * Math.sign(this.aZ - aZ) };
+		return { daXY: this.va * (this.aXY - aXY) / 4, daZ: this.va * (this.aZ - aZ) / 4 }; // Math.sign
 	}
 
 	move() {
