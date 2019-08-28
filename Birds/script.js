@@ -30,16 +30,20 @@ Math.TWO_PI = Math.PI * 2;
 
 // GLOBAL ------------------------------------------------------------------------------------------
 
-function randoInt(min, max) {
+function randomInt(min, max) {
 	return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function randoDec(min, max) {
+function randomDec(min, max) {
 	return Math.random() * (max - min) + min;
 }
 
 function randomBool() {
-	return Math.random() > 0.5;
+	return randomOdds(0.5);
+}
+
+function randomOdds(likelihood) {
+  return Math.random() < likelihood;
 }
 
 function randomColor() {
@@ -73,6 +77,7 @@ class World {
 	// INIT
 
 	init() {
+    this.initLeaderBounds();
 		this.drawBackground();
 		this.initBirds();
 		this.drawBirds();
@@ -82,7 +87,13 @@ class World {
 		for (var i = 0; i < WORLD.BIRD_COUNT; i++) {
 			this.birds.push(new Bird(this, this.ctx, i));
 		}
-	}
+  }
+  
+  initLeaderBounds() {
+    this.leaderMaxX = this.W - WORLD.LEADER_POINT_BOUNDS;
+    this.leaderMaxY = this.H - WORLD.LEADER_POINT_BOUNDS;
+    this.leaderMaxZ = this.D - WORLD.LEADER_POINT_BOUNDS;
+  }
 
 	// ANIMATE
 
@@ -93,14 +104,14 @@ class World {
 			this.birds[i].run(); // starts the bird brain
 		}
 
-		this.interval = setInterval(function () {
-			world.animate();
-		}, 32);
+    window.requestAnimationFrame(this.animate.bind(this))
 	}
 
 	animate() {
+    const world = this;
 		this.drawBackground();
-		this.drawBirds();
+    this.drawBirds();
+    window.requestAnimationFrame(this.animate.bind(this))
 	}
 
 	stop() {
@@ -123,10 +134,10 @@ class World {
 	}
 
 	drawBirds() {
-		// const sortedBirds = _.sortBy(this.birds, function (b) {
-		// 	return -b.z;
-		// })
-		const sortedBirds = this.birds;
+		const sortedBirds = _.sortBy(this.birds, function (b) {
+			return -b.z;
+		})
+		// const sortedBirds = this.birds;
 		let sum = 0;
 		let count = 1;
 		for (let i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
@@ -138,24 +149,24 @@ class World {
 				sum += bird.getAngleTo(bird.getTo()).aXY;
 			}
 		}
-		console.log(sum / count);
+		// console.log(sum / count);
 	}
 
 	// HELPER
 
 	getRandomCoords() {
 		return {
-			x: randoInt(0, this.W),
-			y: randoInt(0, this.H),
-			z: randoInt(0, this.D)
+			x: randomInt(0, this.W),
+			y: randomInt(0, this.H),
+			z: randomInt(0, this.D)
 		};
 	}
 
 	getRandomLeaderCoords() {
 		return {
-			x: randoInt(WORLD.LEADER_POINT_BOUNDS, this.W - WORLD.LEADER_POINT_BOUNDS),
-			y: randoInt(WORLD.LEADER_POINT_BOUNDS, this.H - WORLD.LEADER_POINT_BOUNDS),
-			z: randoInt(WORLD.LEADER_POINT_BOUNDS, this.D - WORLD.LEADER_POINT_BOUNDS)
+			x: randomInt(WORLD.LEADER_POINT_BOUNDS, this.leaderMaxX),
+			y: randomInt(WORLD.LEADER_POINT_BOUNDS, this.leaderMaxY),
+			z: randomInt(WORLD.LEADER_POINT_BOUNDS, this.leaderMaxZ)
 		}
 	}
 
@@ -172,7 +183,7 @@ class World {
 	}
 
 	randomBird() {
-		return randoInt(0, WORLD.BIRD_COUNT);
+		return randomInt(0, WORLD.BIRD_COUNT);
 	}
 
 	zScale(z) {
@@ -199,17 +210,17 @@ class Bird {
 		this.world = world;
 
 		const { x, y, z } = this.world.getRandomCoords();
-		this.aXY = randoDec(0, Math.TWO_PI);
-		this.aZ = randoDec(0, Math.TWO_PI);
+		this.aXY = randomDec(0, Math.TWO_PI);
+		this.aZ = randomDec(0, Math.TWO_PI);
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.v = BIRD.VELOCITY_MAX;
-		this.va = randoDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX);
+		this.va = randomDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX);
 
 		// this.color = randomColor();
 
-		this.isFollowing = randomBool();
+		this.isFollowing = randomOdds(BIRD.CHANGE_FROM_NOT_FOLLOWING_LIKELIHOOD);
 		this.leader = this.world.randomBird();
 		this.to = this.world.getRandomLeaderCoords();
 	}
@@ -218,25 +229,25 @@ class Bird {
 		const bird = this;
 		setTimeout(function () {
 			bird.changeTo();
-		}, randoInt(BIRD.CHANGE_MIND_TIMEOUT_MIN, BIRD.CHANGE_MIND_TIMEOUT_MAX));
+		}, randomInt(BIRD.CHANGE_MIND_TIMEOUT_MIN, BIRD.CHANGE_MIND_TIMEOUT_MAX));
 	}
 
 	changeTo() {
 		if (this.isFollowing) {
 			// if following someone but might change to not following someone
-			if (Math.random() < BIRD.CHANGE_FROM_IS_FOLLOWING_LIKELIHOOD) {
+			if (randomOdds(BIRD.CHANGE_FROM_IS_FOLLOWING_LIKELIHOOD)) {
 				this.isFollowing = false;
 				this.to = this.world.getRandomLeaderCoords();
-				this.va = randoDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX)
+				this.va = randomDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX)
 			}
 			// if follwoing someone but might switch leader
-			else if (Math.random() < BIRD.CHANGE_LEADER_LIKELIHOOD) {
+			else if (randomOdds(BIRD.CHANGE_LEADER_LIKELIHOOD)) {
 				this.leader = this.world.randomBird();
 			}
 		}
 
 		// if not following someone but might switch to leader
-		else if (Math.random() < BIRD.CHANGE_FROM_NOT_FOLLOWING_LIKELIHOOD) {
+		else if (randomOdds(BIRD.CHANGE_FROM_NOT_FOLLOWING_LIKELIHOOD)) {
 			this.isFollowing = true;
 			this.leader = this.world.randomBird();
 		}
@@ -255,7 +266,7 @@ class Bird {
 	chooseNewPoint() {
 		this.isFollowing = false;
 		this.to = this.world.getRandomLeaderCoords();
-		this.va = randoDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX)
+		this.va = randomDec(BIRD.ANGULAR_VELOCITY_MIN, BIRD.ANGULAR_VELOCITY_MAX)
 	}
 
 	getTo() {
@@ -316,9 +327,9 @@ class Bird {
 
 	getColor() {
 		if (this.isFollowing) {
-			return '#0F0';
+			return '#00F';
 		}
-		return '#00F';
+		return '#F00';
 		// return `rgba(0, 0, 0, ${this.world.zScale(this.z)})`;
 	}
 }
