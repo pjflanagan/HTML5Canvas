@@ -3,9 +3,8 @@
 
 const WORLD = {
 	BUG_COUNT: 5000,
-  CLOSE_TO_POINT_DISTANCE: 100,
+  CLOSE_TO_POINT_DISTANCE: 20,
   NEXT_POINT_DISTANCE: 100,
-	LEADER_POINT_BOUNDS: 140
 }
 
 const BUG = {
@@ -106,7 +105,7 @@ class World {
 		for (let i = WORLD.BUG_COUNT - 1; i >= 0; i--) {
       const bug = this.bugs[i];
 			bug.draw();
-      bug.move();
+      bug.move(Date.now());
 		}
 	}
 
@@ -114,9 +113,9 @@ class World {
 
 	getRandomCoords() {
 		return {
-			x: randomInt(0, this.W),
-			y: randomInt(0, this.H),
-			z: randomInt(0, this.D)
+			x: randomInt(-100, this.W+100),
+			y: randomInt(-100, this.H+100),
+			z: randomInt(-100, this.D+100)
 		};
 	}
 
@@ -157,19 +156,26 @@ class Bug {
     this.blink();
   }
 
-  blink() {
-    const bug = this;
-    bug.on = !bug.on;
-    if(bug.on) {
-      setTimeout(() => { bug.blink() }, randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX));
+  setNextBlinkTime() {
+    if(this.on) {
+      this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
     } else {
-      setTimeout(() => { bug.blink() }, randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX));
+      this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX);
     }
   }
 
-	move() {
+  blink() {
+    this.on = !this.on;
+    this.setNextBlinkTime();
+  }
+
+	move(date) {
     if (this.isCloseToPoint()) {
       this.chooseNewPoint();
+    }
+
+    if (date > this.nextBlinkTime) {
+      this.blink();
     }
 
     const { aXY, aZ } = this.getAngleTo();
@@ -186,7 +192,7 @@ class Bug {
 	}
 
 	draw() {
-    const radius = 1; // TODO: set this to be distance somehow
+    const radius = randomDec(.5, 1.2); // TODO: set this to be distance somehow
 		this.ctx.beginPath();
 		this.ctx.moveTo(this.pos.x, this.pos.y);
     this.ctx.arc(this.pos.x, this.pos.y, radius, 0, Math.TWO_PI, false);
