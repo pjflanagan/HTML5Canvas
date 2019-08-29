@@ -203,7 +203,7 @@ class Bug {
 
 	getColor() {
     if(this.on) {
-      return "#FF7";
+      return `rgb(255, 255, ${ randomInt(120, 200) })`;
     }
 		return "#1c1c1c";
   }
