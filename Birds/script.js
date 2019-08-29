@@ -2,7 +2,7 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-	BIRD_COUNT: 500,
+	BIRD_COUNT: 2000,
 	CLOSE_TO_POINT_DISTANCE: 40,
 	LEADER_POINT_BOUNDS: 140,
 	CLOSE_TO_EDGE_BOUNDS: 40
@@ -18,8 +18,8 @@ const BIRD = {
 	ANGULAR_VELOCITY_MIN: .08, // .04,
 	ANGULAR_VELOCITY_MAX: .28, // .1,
 	// BRAIN
-	CHANGE_MIND_TIMEOUT_MIN: 500,
-	CHANGE_MIND_TIMEOUT_MAX: 6000,
+	CHANGE_MIND_TIMEOUT_MIN: 800,
+	CHANGE_MIND_TIMEOUT_MAX: 8000,
 	CHANGE_FROM_IS_FOLLOWING_LIKELIHOOD: .2,
 	CHANGE_FROM_NOT_FOLLOWING_LIKELIHOOD: .8,
 	CHANGE_LEADER_LIKELIHOOD: .2
@@ -172,9 +172,9 @@ class World {
 
 	isCloseToEdge({ x, y, z }) {
 		return (
-			x < 0 || x > this.W - WORLD.CLOSE_TO_EDGE_BOUNDS ||
-			y < 0 || y > this.H - WORLD.CLOSE_TO_EDGE_BOUNDS ||
-			z < 0 || z > this.D - WORLD.CLOSE_TO_EDGE_BOUNDS
+			x < 0 || x > this.W ||
+			y < 0 || y > this.H ||
+			z < 0 || z > this.D
 		)
 	}
 
@@ -263,7 +263,7 @@ class Bird {
 	}
 
 	isCloseToPoint() {
-		return distance({ x: this.x, y: this.y, z: this.to.z }, this.to) < WORLD.CLOSE_TO_POINT_DISTANCE; // TODO: use z dim properly
+		return distance(this, this.to) < WORLD.CLOSE_TO_POINT_DISTANCE;
 	}
 
 	chooseNewPoint() {
