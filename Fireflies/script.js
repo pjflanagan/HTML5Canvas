@@ -64,12 +64,21 @@ class World {
 		this.bugs = [];
     this.max = distance({ x: this.W, y: this.H, z: this.D }, { x: 0, y: 0, z: 0 });
     
+    this.initBackground();
     this.drawBackground();
 		this.initBugs();
 		this.drawBugs();
 	}
 
-	// INIT
+  // INIT
+  
+  initBackground() {
+    this.grd = this.ctx.createLinearGradient(0, 0, 0, this.H);
+    this.grd.addColorStop(0, "#0F394F");
+    this.grd.addColorStop(.33, "#0B123A");
+    this.grd.addColorStop(.66, "#14041E");
+    this.grd.addColorStop(1, "#000");
+  }
 
 	initBugs() {
 		for (var i = 0; i < WORLD.BUG_COUNT; i++) {
@@ -97,7 +106,7 @@ class World {
 
 	drawBackground() {
 		this.ctx.rect(0, 0, this.W, this.H);
-		this.ctx.fillStyle = "#1c1c1c";
+		this.ctx.fillStyle = this.grd;
 		this.ctx.fill();
 	}
 
@@ -149,8 +158,7 @@ class Bug {
 		this.i = i;
 
 		this.pos = this.world.getRandomCoords();
-    this.to = this.world.getRandomCoords();
-    this.v = BUG.VELOCITY_MAX;
+    this.chooseNewPoint();
 
     this.on = randomOdds(.2);
     this.blink();
@@ -205,7 +213,7 @@ class Bug {
     if(this.on) {
       return `rgb(255, 255, ${ randomInt(120, 200) })`;
     }
-		return "#1c1c1c";
+		return "#0000";
   }
   
   isCloseToPoint() {
@@ -213,7 +221,8 @@ class Bug {
 	}
 
 	chooseNewPoint() {
-		this.to = this.world.getRandomCoords(); // TODO: make this with respect to current position
+    this.to = this.world.getRandomCoords();
+    this.v = randomDec(BUG.VELOCITY_MIN, BUG.VELOCITY_MAX);
 	}
 
 	getAngleTo() {
