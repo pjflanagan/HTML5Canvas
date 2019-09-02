@@ -3,17 +3,27 @@
 
 const WORLD = {
 	BUG_COUNT: 5000,
-  CLOSE_TO_POINT_DISTANCE: 20,
-  NEXT_POINT_DISTANCE: 100,
+	CLOSE_TO_POINT_DISTANCE: 20,
+	NEXT_POINT_DISTANCE: 100,
+	COLOR: [
+		"#032130BB",
+		"#02092eBB",
+		"#11011FBB",
+		"#0F001aBB",
+		"#000000BB"
+	],
+	COLOR_VARIATION: .1, // plus or minus
+	COLOR_VELOCITY: .0005,
+	CLOSE_TO_COLOR_DISTANCE: .0015
 }
 
 const BUG = {
-  VELOCITY_MIN: .2,
-  VELOCITY_MAX: .8,
-  BLINK_TIMEOUT_MIN: 600,
-  BLINK_TIMEOUT_MAX: 2000,
-  BLINK_DURATION_MIN: 80,
-  BLINK_DURATION_MAX: 120
+	VELOCITY_MIN: .2,
+	VELOCITY_MAX: .8,
+	BLINK_TIMEOUT_MIN: 600,
+	BLINK_TIMEOUT_MAX: 2000,
+	BLINK_DURATION_MIN: 80,
+	BLINK_DURATION_MAX: 120
 }
 
 Math.HALF_PI = Math.PI / 2;
@@ -34,7 +44,7 @@ function randomBool() {
 }
 
 function randomOdds(likelihood) {
-  return Math.random() < likelihood;
+	return Math.random() < likelihood;
 }
 
 function randomColor() {
@@ -62,40 +72,54 @@ class World {
 		this.H = height;
 		this.D = (width + height) / 2;
 		this.bugs = [];
-    this.max = distance({ x: this.W, y: this.H, z: this.D }, { x: 0, y: 0, z: 0 });
-    
-    this.initBackground();
-    this.drawBackground();
+		this.max = distance({ x: this.W, y: this.H, z: this.D }, { x: 0, y: 0, z: 0 });
+
+		this.initBackground();
+		this.drawBackground();
 		this.initBugs();
 		this.drawBugs();
 	}
 
-  // INIT
-  
-  initBackground() {
-    this.grd = this.ctx.createLinearGradient(0, 0, 0, this.H);
-    this.grd.addColorStop(0, "#0F394F");
-    this.grd.addColorStop(.33, "#0B123A");
-    this.grd.addColorStop(.66, "#14041E");
-    this.grd.addColorStop(1, "#000");
-  }
+	// INIT
+
+	initBackground() {
+		this.color = [
+			0,
+			.25,
+			.5,
+			.75,
+			1
+		];
+		this.toColor = [];
+		for (let i = 1; i < this.color.length - 1; ++i) {
+			this.toColor[i - 1] = this.color[i] + randomDec(-WORLD.COLOR_VARIATION, WORLD.COLOR_VARIATION);
+		}
+		this.setGradient();
+	}
+
+	setGradient() {
+		this.grd = this.ctx.createLinearGradient(0, 0, 0, this.H);
+		for (let i = 0; i < this.color.length; ++i) {
+			this.grd.addColorStop(this.color[i], WORLD.COLOR[i]);
+		}
+	}
 
 	initBugs() {
 		for (var i = 0; i < WORLD.BUG_COUNT; i++) {
 			this.bugs.push(new Bug(this, i));
 		}
-  }
+	}
 
 	// ANIMATE
 
 	run() {
-    window.requestAnimationFrame(this.animate.bind(this));
+		window.requestAnimationFrame(this.animate.bind(this));
 	}
 
 	animate() {
 		this.drawBackground();
-    this.drawBugs();
-    window.requestAnimationFrame(this.animate.bind(this));
+		this.drawBugs();
+		window.requestAnimationFrame(this.animate.bind(this));
 	}
 
 	stop() {
@@ -104,7 +128,21 @@ class World {
 
 	// DRAW
 
+	moveGradient() {
+		for (let i = 1; i < this.color.length - 1; ++i) {
+			const colorDiff = this.color[i] - this.toColor[i - 1];
+			if (Math.abs(colorDiff) < WORLD.CLOSE_TO_COLOR_DISTANCE) {
+				this.toColor[i - 1] = (i * .25) - randomDec(-WORLD.COLOR_VARIATION, WORLD.COLOR_VARIATION);
+			} else {
+				this.color[i] = this.color[i] - Math.sign(colorDiff) * WORLD.COLOR_VELOCITY;
+			}
+		}
+		console.log(this.color);
+		this.setGradient();
+	}
+
 	drawBackground() {
+		this.moveGradient();
 		this.ctx.rect(0, 0, this.W, this.H);
 		this.ctx.fillStyle = this.grd;
 		this.ctx.fill();
@@ -112,9 +150,9 @@ class World {
 
 	drawBugs() {
 		for (let i = WORLD.BUG_COUNT - 1; i >= 0; i--) {
-      const bug = this.bugs[i];
+			const bug = this.bugs[i];
 			bug.draw();
-      bug.move(Date.now());
+			bug.move(Date.now());
 		}
 	}
 
@@ -122,9 +160,9 @@ class World {
 
 	getRandomCoords() {
 		return {
-			x: randomInt(-100, this.W+100),
-			y: randomInt(-100, this.H+100),
-			z: randomInt(-100, this.D+100)
+			x: randomInt(-100, this.W + 100),
+			y: randomInt(-100, this.H + 100),
+			z: randomInt(-100, this.D + 100)
 		};
 	}
 
@@ -137,99 +175,113 @@ class World {
 	}
 
 	zScale(z) {
-		return .5 * (z / this.D) + .5;
+		return (.5 * (z / this.D)) + .5;
 	}
 
 	getMax() {
 		return this.max;
-  }
-  
-  getCtx() {
-    return this.ctx;
-  }
+	}
+
+	getCtx() {
+		return this.ctx;
+	}
 }
 
 // BUG ---------------------------------------------------------------------------------------------
 
 class Bug {
 	constructor(world, i) {
-    this.world = world;
-    this.ctx = this.world.getCtx();
+		this.world = world;
+		this.ctx = this.world.getCtx();
 		this.i = i;
 
 		this.pos = this.world.getRandomCoords();
-    this.chooseNewPoint();
+		this.chooseNewPoint();
 
-    this.on = randomOdds(.2);
-    this.blink();
-  }
+		this.on = randomOdds(.2);
+		this.blink();
+	}
 
-  setNextBlinkTime() {
-    if(this.on) {
-      this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
-    } else {
-      this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX);
-    }
-  }
+	setNextBlinkTime() {
+		if (this.on) {
+			this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
+		} else {
+			this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX);
+		}
+	}
 
-  blink() {
-    this.on = !this.on;
-    this.setNextBlinkTime();
-  }
+	blink() {
+		this.on = !this.on;
+		this.setNextBlinkTime();
+	}
 
 	move(date) {
-    if (this.isCloseToPoint()) {
-      this.chooseNewPoint();
-    }
+		if (this.isCloseToPoint()) {
+			this.chooseNewPoint();
+		}
 
-    if (date > this.nextBlinkTime) {
-      this.blink();
-    }
+		if (date > this.nextBlinkTime) {
+			this.blink();
+		}
 
-    const { aXY, aZ } = this.getAngleTo();
-
-		const vx = Math.cos(aXY) * this.v;
-		const vy = Math.sin(aXY) * this.v;
-		const vz = Math.cos(aZ) * this.v;
+		const vx = Math.cos(this.aXY) * this.v;
+		const vy = Math.sin(this.aXY) * this.v;
+		const vz = Math.cos(this.aZ) * this.v;
 
 		this.pos = {
-      x: this.pos.x - vx,
-      y: this.pos.y - vy,
-      z: this.pos.z - vz
-    }
+			x: this.pos.x - vx,
+			y: this.pos.y - vy,
+			z: this.pos.z - vz
+		}
 	}
 
 	draw() {
-    const radius = randomDec(.5, 1.2); // TODO: set this to be distance somehow
+		const radius = 1.2 * this.world.zScale(this.pos.z);
 		this.ctx.beginPath();
 		this.ctx.moveTo(this.pos.x, this.pos.y);
-    this.ctx.arc(this.pos.x, this.pos.y, radius, 0, Math.TWO_PI, false);
+		this.ctx.arc(this.pos.x, this.pos.y, radius, 0, Math.TWO_PI, false);
 		this.ctx.fillStyle = this.getColor();
 		this.ctx.fill();
 		this.ctx.closePath();
 	}
 
 	getColor() {
-    if(this.on) {
-      return `rgb(255, 255, ${ randomInt(120, 200) })`;
-    }
+		if (this.on) {
+			const blue = 255 * this.world.zScale(this.pos.z);
+			// this.print(blue);
+			return `rgb(255, 255, ${blue})`;
+		}
 		return "#0000";
-  }
-  
-  isCloseToPoint() {
+	}
+
+	isCloseToPoint() {
 		return distance(this.pos, this.to) < WORLD.CLOSE_TO_POINT_DISTANCE;
 	}
 
 	chooseNewPoint() {
-    this.to = this.world.getRandomCoords();
-    this.v = randomDec(BUG.VELOCITY_MIN, BUG.VELOCITY_MAX);
+		this.to = this.world.getRandomCoords();
+		const { aXY, aZ } = this.getAngleTo();
+		this.aXY = aXY;
+		this.aZ = aZ;
+		this.v = randomDec(BUG.VELOCITY_MIN, BUG.VELOCITY_MAX);
 	}
 
 	getAngleTo() {
-    const to = this.to;
-    const pos = this.pos;
-		const dx = pos.x - to.x, dy = pos.y - to.y, dz = pos.z - to.z;
-		return { aXY: -1.0 * Math.atan2(dx, dy) + Math.HALF_PI, aZ: -1.0 * Math.atan2(dx, dz) };
+		const to = this.to;
+		const pos = this.pos;
+		const dx = pos.x - to.x,
+			dy = pos.y - to.y,
+			dz = pos.z - to.z;
+		return {
+			aXY: -1.0 * Math.atan2(dx, dy) + Math.HALF_PI,
+			aZ: 1.0 * Math.atan2(dx, dz) + Math.HALF_PI
+		};
+	}
+
+	print(statement) {
+		if (this.i === 0) {
+			console.log(statement);
+		}
 	}
 
 }
