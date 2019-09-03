@@ -201,7 +201,8 @@ class Bug {
 		this.pos = this.world.getRandomCoords();
 		this.chooseNewPoint();
 
-		this.on = randomOdds(.2);
+    this.on = randomOdds(.2);
+    this.color = {}
 		this.blink(Date.now());
 	}
 
@@ -221,7 +222,8 @@ class Bug {
 
 	blink(date) {
 		this.on = !this.on;
-		this.setNextBlinkTime(date);
+    this.setNextBlinkTime(date);
+    this.setColor();
 	}
 
 	isCloseToEdge() {
@@ -257,7 +259,7 @@ class Bug {
 		this.ctx.beginPath();
 		this.ctx.moveTo(this.pos.x, this.pos.y);
 		this.ctx.arc(this.pos.x, this.pos.y, radius, 0, Math.TWO_PI, false);
-		this.ctx.fillStyle = this.getColor();
+		this.ctx.fillStyle = this.color.body;
 		this.ctx.fill();
 		this.ctx.closePath();
 		if (this.on && zScale > BUG.BIG_CHANCE) {
@@ -265,7 +267,7 @@ class Bug {
 			this.ctx.beginPath();
 			this.ctx.moveTo(this.pos.x, this.pos.y);
 			this.ctx.arc(this.pos.x, this.pos.y, glowRadius, 0, Math.TWO_PI, false);
-			this.ctx.fillStyle = "#feffcf11";
+			this.ctx.fillStyle = this.color.glow;
 			this.ctx.fill();
 			this.ctx.closePath();
 		}
@@ -275,13 +277,14 @@ class Bug {
     return this.world.zScale(this.pos.z);
   }
 
-	getColor() {
+	setColor() {
 		if (this.on) {
-      // const blue = 255 * this.zScale();
-      const blue = 255 * randomDec(.2, 1);
-			return `rgb(255, 255, ${blue})`;
-		}
-		return `rgba(0, 0, 0, ${this.zScale()})`;
+      this.color.body = `rgb(255, 255, ${ 255 * randomDec(.4, 1) })`;
+      this.color.glow = `rgba(254, 255, 207, ${randomDec(0.02, 0.08)})`;
+		} else {
+      this.color.body = `rgba(0, 0, 0, ${this.zScale()})`;
+      this.color.glow = '#0000';
+    }
 	}
 
 	isCloseToPoint() {
