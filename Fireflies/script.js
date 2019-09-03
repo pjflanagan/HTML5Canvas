@@ -2,7 +2,7 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-	BUG_COUNT: 5000,
+	BUG_COUNT: 2000,
 	CLOSE_TO_POINT_DISTANCE: 20,
 	NEXT_POINT_DISTANCE: 100,
 	COLOR: [
@@ -202,26 +202,26 @@ class Bug {
 		this.chooseNewPoint();
 
 		this.on = randomOdds(.2);
-		this.blink();
+		this.blink(Date.now());
 	}
 
-	setNextBlinkTime() {
-		const zScale = this.world.zScale(this.pos.z);
+	setNextBlinkTime(date) {
+		const zScale = this.zScale();
 		if (this.on) {
 			if (zScale > BUG.BIG_CHANCE) {
-				this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN * 2, BUG.BLINK_DURATION_MAX * 2);
+				this.nextBlinkTime = date + randomDec(BUG.BLINK_DURATION_MIN * 3, BUG.BLINK_DURATION_MAX * 4);
 
 			} else {
-				this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
+				this.nextBlinkTime = date + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
 			}
 		} else {
-			this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX);
+			this.nextBlinkTime = date + randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX);
 		}
 	}
 
-	blink() {
+	blink(date) {
 		this.on = !this.on;
-		this.setNextBlinkTime();
+		this.setNextBlinkTime(date);
 	}
 
 	isCloseToEdge() {
@@ -237,7 +237,7 @@ class Bug {
 		}
 
 		if (date > this.nextBlinkTime) {
-			this.blink();
+			this.blink(date);
 		}
 
 		const vx = Math.cos(this.aXY) * this.v;
@@ -252,8 +252,8 @@ class Bug {
 	}
 
 	draw() {
-		const zScale = this.world.zScale(this.pos.z);
-		const radius = 1.2 * zScale;
+		const zScale = this.zScale();
+		const radius = (zScale > BUG.BIG_CHANCE) ? 2 : 1.2 * zScale;
 		this.ctx.beginPath();
 		this.ctx.moveTo(this.pos.x, this.pos.y);
 		this.ctx.arc(this.pos.x, this.pos.y, radius, 0, Math.TWO_PI, false);
@@ -269,15 +269,19 @@ class Bug {
 			this.ctx.fill();
 			this.ctx.closePath();
 		}
-	}
+  }
+  
+  zScale() {
+    return this.world.zScale(this.pos.z);
+  }
 
 	getColor() {
 		if (this.on) {
-			const blue = 255 * this.world.zScale(this.pos.z);
-			// this.print(blue);
+      // const blue = 255 * this.zScale();
+      const blue = 255 * randomDec(.2, 1);
 			return `rgb(255, 255, ${blue})`;
 		}
-		return "#0000";
+		return `rgba(0, 0, 0, ${this.zScale()})`;
 	}
 
 	isCloseToPoint() {
