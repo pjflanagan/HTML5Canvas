@@ -23,7 +23,8 @@ const BUG = {
 	BLINK_TIMEOUT_MIN: 600,
 	BLINK_TIMEOUT_MAX: 2000,
 	BLINK_DURATION_MIN: 80,
-	BLINK_DURATION_MAX: 120
+	BLINK_DURATION_MAX: 120,
+	BIG_CHANCE: 0.96,
 }
 
 Math.HALF_PI = Math.PI / 2;
@@ -71,6 +72,9 @@ class World {
 		this.W = width;
 		this.H = height;
 		this.D = (width + height) / 2;
+		this.Wp100 = this.W + 100;
+		this.Hp100 = this.H + 100;
+		this.Dp100 = this.D + 100;
 		this.bugs = [];
 		this.max = distance({ x: this.W, y: this.H, z: this.D }, { x: 0, y: 0, z: 0 });
 
@@ -137,7 +141,6 @@ class World {
 				this.color[i] = this.color[i] - Math.sign(colorDiff) * WORLD.COLOR_VELOCITY;
 			}
 		}
-		console.log(this.color);
 		this.setGradient();
 	}
 
@@ -160,17 +163,17 @@ class World {
 
 	getRandomCoords() {
 		return {
-			x: randomInt(-100, this.W + 100),
-			y: randomInt(-100, this.H + 100),
-			z: randomInt(-100, this.D + 100)
+			x: randomInt(-100, this.Wp100),
+			y: randomInt(-100, this.Hp100),
+			z: randomInt(-100, this.Dp100)
 		};
 	}
 
 	isCloseToEdge({ x, y, z }) {
 		return (
-			x < 0 || x > this.W ||
-			y < 0 || y > this.H ||
-			z < 0 || z > this.D
+			x < -100 || x > this.Wp100 ||
+			y < -100 || y > this.Hp100 ||
+			z < -100 || z > this.Dp100
 		)
 	}
 
@@ -203,8 +206,14 @@ class Bug {
 	}
 
 	setNextBlinkTime() {
+		const zScale = this.world.zScale(this.pos.z);
 		if (this.on) {
-			this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
+			if (zScale > BUG.BIG_CHANCE) {
+				this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN * 2, BUG.BLINK_DURATION_MAX * 2);
+
+			} else {
+				this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_DURATION_MIN, BUG.BLINK_DURATION_MAX);
+			}
 		} else {
 			this.nextBlinkTime = Date.now() + randomDec(BUG.BLINK_TIMEOUT_MIN, BUG.BLINK_TIMEOUT_MAX);
 		}
@@ -215,8 +224,15 @@ class Bug {
 		this.setNextBlinkTime();
 	}
 
+	isCloseToEdge() {
+		return this.world.isCloseToEdge(this.pos);
+	}
+
 	move(date) {
 		if (this.isCloseToPoint()) {
+			this.chooseNewPoint();
+		} else if (this.isCloseToEdge()) {
+			this.pos = this.world.getRandomCoords();
 			this.chooseNewPoint();
 		}
 
@@ -236,13 +252,23 @@ class Bug {
 	}
 
 	draw() {
-		const radius = 1.2 * this.world.zScale(this.pos.z);
+		const zScale = this.world.zScale(this.pos.z);
+		const radius = 1.2 * zScale;
 		this.ctx.beginPath();
 		this.ctx.moveTo(this.pos.x, this.pos.y);
 		this.ctx.arc(this.pos.x, this.pos.y, radius, 0, Math.TWO_PI, false);
 		this.ctx.fillStyle = this.getColor();
 		this.ctx.fill();
 		this.ctx.closePath();
+		if (this.on && zScale > BUG.BIG_CHANCE) {
+			const glowRadius = 6 + (zScale - BUG.BIG_CHANCE) * 10;
+			this.ctx.beginPath();
+			this.ctx.moveTo(this.pos.x, this.pos.y);
+			this.ctx.arc(this.pos.x, this.pos.y, glowRadius, 0, Math.TWO_PI, false);
+			this.ctx.fillStyle = "#feffcf11";
+			this.ctx.fill();
+			this.ctx.closePath();
+		}
 	}
 
 	getColor() {

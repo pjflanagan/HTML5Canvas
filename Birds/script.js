@@ -43,7 +43,7 @@ function randomBool() {
 }
 
 function randomOdds(likelihood) {
-  return Math.random() < likelihood;
+	return Math.random() < likelihood;
 }
 
 function randomColor() {
@@ -77,7 +77,7 @@ class World {
 	// INIT
 
 	init() {
-    this.initLeaderBounds();
+		this.initLeaderBounds();
 		this.drawBackground();
 		this.initBirds();
 		this.drawBirds();
@@ -87,13 +87,13 @@ class World {
 		for (var i = 0; i < WORLD.BIRD_COUNT; i++) {
 			this.birds.push(new Bird(this, this.ctx, i));
 		}
-  }
-  
-  initLeaderBounds() {
-    this.leaderMaxX = this.W - WORLD.LEADER_POINT_BOUNDS;
-    this.leaderMaxY = this.H - WORLD.LEADER_POINT_BOUNDS;
-    this.leaderMaxZ = this.D - WORLD.LEADER_POINT_BOUNDS;
-  }
+	}
+
+	initLeaderBounds() {
+		this.leaderMaxX = this.W - WORLD.LEADER_POINT_BOUNDS;
+		this.leaderMaxY = this.H - WORLD.LEADER_POINT_BOUNDS;
+		this.leaderMaxZ = this.D - WORLD.LEADER_POINT_BOUNDS;
+	}
 
 	// ANIMATE
 
@@ -104,14 +104,14 @@ class World {
 			this.birds[i].run(); // starts the bird brain
 		}
 
-    window.requestAnimationFrame(this.animate.bind(this))
+		window.requestAnimationFrame(this.animate.bind(this))
 	}
 
 	animate() {
-    const world = this;
+		const world = this;
 		this.drawBackground();
-    this.drawBirds();
-    window.requestAnimationFrame(this.animate.bind(this))
+		this.drawBirds();
+		window.requestAnimationFrame(this.animate.bind(this))
 	}
 
 	stop() {
@@ -233,8 +233,8 @@ class Bird {
 	}
 
 
-  // BRAIN: if they see someone follow them, if they see nobody then go back towards
-  // average of the whole group
+	// BRAIN: if they see someone follow them, if they see nobody then go back towards
+	// average of the whole group
 	changeTo() {
 		if (this.isFollowing) {
 			// if following someone but might change to not following someone
@@ -329,11 +329,11 @@ class Bird {
 	}
 
 	getColor() {
-		if (this.isFollowing) {
-			return '#00F';
-		}
-		return '#F00';
-		// return `rgba(0, 0, 0, ${this.world.zScale(this.z)})`;
+		// if (this.isFollowing) {
+		// 	return '#00F';
+		// }
+		// return '#F00';
+		return `rgba(0, 0, 0, ${this.world.zScale(this.z)})`;
 	}
 }
 
