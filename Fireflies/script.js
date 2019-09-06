@@ -6,15 +6,26 @@ const WORLD = {
 	CLOSE_TO_POINT_DISTANCE: 20,
 	NEXT_POINT_DISTANCE: 100,
 	COLOR: [
-		"#032130BB",
-		"#02092eBB",
-		"#11011FBB",
+		"#000000BB",
 		"#0F001aBB",
-		"#000000BB"
-	],
-	COLOR_VARIATION: .1, // plus or minus
-	COLOR_VELOCITY: .0005,
-	CLOSE_TO_COLOR_DISTANCE: .0015
+		"#11011FBB",
+		"#02092eBB",
+		"#032130BB",
+		"#000000"
+  ],
+  COLOR_INIT_LOCATIONS: [
+    0,
+    .1,
+    .2,
+    .3,
+    .5,
+    .5
+  ],
+  HILLS: [
+    { x: .5, y: -.1, xr: .3, yr: .15, color: "#000B" },
+    { x: .2, y: 0, xr: .3, yr: .1, color: "#000" },
+    { x: .8, y: 0, xr: .35, yr: .1, color: "#000" }
+  ]
 }
 
 const BUG = {
@@ -74,7 +85,8 @@ class World {
 		this.D = (width + height) / 2;
 		this.Wp100 = this.W + 100;
 		this.Hp100 = this.H + 100;
-		this.Dp100 = this.D + 100;
+    this.Dp100 = this.D + 100;
+    this.HALF_H = this.H / 2;
 		this.bugs = [];
 		this.max = distance({ x: this.W, y: this.H, z: this.D }, { x: 0, y: 0, z: 0 });
 
@@ -87,15 +99,9 @@ class World {
 	// INIT
 
 	initBackground() {
-		this.color = [
-			0,
-			.25,
-			.5,
-			.75,
-			1
-		];
+		this.color = WORLD.COLOR_INIT_LOCATIONS;
 		this.toColor = [];
-		for (let i = 1; i < this.color.length - 1; ++i) {
+		for (let i = 1; i < this.color.length - 2; ++i) {
 			this.toColor[i - 1] = this.color[i] + randomDec(-WORLD.COLOR_VARIATION, WORLD.COLOR_VARIATION);
 		}
 		this.setGradient();
@@ -132,23 +138,20 @@ class World {
 
 	// DRAW
 
-	moveGradient() {
-		for (let i = 1; i < this.color.length - 1; ++i) {
-			const colorDiff = this.color[i] - this.toColor[i - 1];
-			if (Math.abs(colorDiff) < WORLD.CLOSE_TO_COLOR_DISTANCE) {
-				this.toColor[i - 1] = (i * .25) - randomDec(-WORLD.COLOR_VARIATION, WORLD.COLOR_VARIATION);
-			} else {
-				this.color[i] = this.color[i] - Math.sign(colorDiff) * WORLD.COLOR_VELOCITY;
-			}
-		}
-		this.setGradient();
-	}
-
 	drawBackground() {
-		this.moveGradient();
 		this.ctx.rect(0, 0, this.W, this.H);
 		this.ctx.fillStyle = this.grd;
-		this.ctx.fill();
+    this.ctx.fill();
+    
+    for(let i = 0; i < WORLD.HILLS.length; ++i) {
+      const { x, y, xr, yr, color } = WORLD.HILLS[i]
+      this.ctx.beginPath();
+      this.ctx.moveTo(100, this.HALF_H);
+      this.ctx.ellipse(this.W * x, this.HALF_H - this.HALF_H * y, this.W * xr, this.H * yr, 0, Math.TWO_PI, false);
+      this.ctx.fillStyle = color;
+      this.ctx.fill();
+      this.ctx.closePath();
+    }
 	}
 
 	drawBugs() {
