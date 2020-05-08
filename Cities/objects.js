@@ -36,6 +36,7 @@ class World {
 		for (let b = 0; b < WORLD.BUILDING_COUNT; ++b) {
 			this.buildings.push(new Building(this));
 		}
+		this.drawBuildings();
 	}
 
 	// ANIMATE
