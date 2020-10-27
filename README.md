@@ -2,6 +2,7 @@
 
 A collection of animations made using an HTML5 canvas for fun.
 
+- [2020 Riata](http://pjflanagan.me/HTML5Canvas/Riata)
 - [2020 Bamboo](http://pjflanagan.me/HTML5Canvas/Bamboo)
 - [2019 Fireflies](http://pjflanagan.me/HTML5Canvas/Fireflies)
 - [2019 Birds](http://pjflanagan.me/HTML5Canvas/Birds)
