@@ -14,7 +14,8 @@ const LOOP = {
 }
 
 const APODMENT = {
-  COUNT: 30,
+  MAX_COUNT: 60,
+  MIN_COUNT: 30,
   LENGTH: 12 / 3,
   WIDTH: 18 / 3
 }
@@ -169,14 +170,14 @@ class Loop extends Pod {
         )
       );
     }
-    if (this.count % Math.round(LOOP.COUNT / LOOP.APODMENT_ROWS) === 0) {
+    if (randomOdds(.3)) { // (this.count % Math.round(LOOP.COUNT / LOOP.APODMENT_ROWS) === 0) {
       this.world.addPodToQueue(
         new Apodment(
           this.world,
           this.ctx,
           this.p2,
           this.dir - (2 * Math.PI / LOOP.COUNT) + Math.PI / 2,
-          APODMENT.COUNT
+          randomInt(APODMENT.MIN_COUNT, APODMENT.MAX_COUNT)
         )
       );
     }
