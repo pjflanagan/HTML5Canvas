@@ -3,7 +3,7 @@
 
 const WORLD = {
   MAX_ALIVE: 12,
-  DRAW_SPEED: 6
+  DRAW_SPEED: 8
 }
 
 const LOOP = {
@@ -62,7 +62,6 @@ class World {
 		this.W = width;
     this.H = height;
     this.pods = [];
-    this.firstLoopIsStarted = false;
     this.drawBackground();
 
     const dir = this.chooseDirection();
@@ -74,8 +73,8 @@ class World {
 	drawBackground() {
 		this.ctx.rect(0, 0, this.W, this.H);
     const grd = this.ctx.createRadialGradient(this.W/2, this.H/2, 0, this.W/2, this.H/2, this.W/2);
-    grd.addColorStop(0, "#FFF1");
-    grd.addColorStop(1, "#d1d1d111");
+    grd.addColorStop(0, "#ffffff0a");
+    grd.addColorStop(1, "#d1d1d10a");
     this.ctx.fillStyle = grd;
     this.ctx.fill();
     
@@ -103,15 +102,22 @@ class World {
     }
   }
 
+  newPodOdds() {
+    return 1 - this.pods.length / WORLD.MAX_ALIVE;
+  }
+
   animate() {
     this.drawBackground();
+    console.log(this.pods.length);
     for(let i = 0; i < WORLD.DRAW_SPEED; i++) {
       const pod = this.pods.shift();
       if (!!pod) {
         pod.animate();
       }
     }
-    window.requestAnimationFrame(this.animate.bind(this));
+    if(this.pods.length > 0) {
+      window.requestAnimationFrame(this.animate.bind(this));
+    }
   }
 
 }
@@ -170,7 +176,7 @@ class Loop extends Pod {
         )
       );
     }
-    if (randomOdds(.3)) { // (this.count % Math.round(LOOP.COUNT / LOOP.APODMENT_ROWS) === 0) {
+    if (randomOdds(this.world.newPodOdds())) { // (this.count % Math.round(LOOP.COUNT / LOOP.APODMENT_ROWS) === 0) {
       this.world.addPodToQueue(
         new Apodment(
           this.world,
@@ -214,7 +220,7 @@ class Apodment extends Pod {
     // if the row is done then draw a loop
     // otherwise draw another in the row
     if (this.count === 0) {
-      if (!this.world.firstLoopIsStarted || randomOdds(.3)) {
+      if (randomOdds(this.world.newPodOdds())) {
         this.world.addPodToQueue(
           new Loop(
             this.world,
@@ -224,7 +230,6 @@ class Apodment extends Pod {
             LOOP.COUNT
           )
         );
-        this.world.firstLoopIsStarted = true;
       }
     } else {
       this.world.addPodToQueue(
