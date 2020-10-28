@@ -64,8 +64,18 @@ class World {
     this.pods = [];
     this.drawBackground();
 
-    const dir = this.chooseDirection();
-    this.addPodToQueue(new Loop(this, ctx, this.start, dir, LOOP.COUNT));
+    const {angle, pos } = this.chooseDirection();
+    this.addPodToQueue(
+      new Loop(
+        this,
+        ctx,
+        {
+          pos, angle,
+          count: LOOP.COUNT,
+          color: randomColor()
+        }
+      )
+    );
 
     this.animate();
 	}
@@ -82,11 +92,13 @@ class World {
   }
   
   chooseDirection() {
-    this.start = {
-      x: this.W/2,
-      y: this.H/2
+    return {
+      pos: {
+        x: this.W/2,
+        y: this.H/2
+      },
+      angle: randomDec(0, 2 * Math.PI)
     };
-    return randomDec(0, 2 * Math.PI);
   }
 
   isOutOfBounds({x, y}) {
@@ -108,7 +120,6 @@ class World {
 
   animate() {
     this.drawBackground();
-    console.log(this.pods.length);
     for(let i = 0; i < WORLD.DRAW_SPEED; i++) {
       const pod = this.pods.shift();
       if (!!pod) {
@@ -124,13 +135,15 @@ class World {
 
 // POD ---------------------------------------------------------------------------------------------
 
+// pod should take data
 class Pod {
-  constructor(world, ctx, pos, dir, count) {
+  constructor(world, ctx, data) {
     this.world = world;
     this.ctx = ctx;
-    this.p1 = pos;
-    this.dir = dir;
-    this.count = count;
+    this.p1 = data.pos;
+    this.angle = data.angle;
+    this.count = data.count;
+    this.color = data.color;
     this.calcP2();
   }
   
@@ -144,11 +157,13 @@ class Pod {
   }
 }
 
+// TODO: make the loop go in different directions
+// dir: clockwise, counter clockwise (should be named dir)
 class Loop extends Pod {
   calcP2() {
     this.p2 = {
-      x: this.p1.x + LOOP.LENGTH * Math.sin(this.dir),
-      y: this.p1.y + LOOP.LENGTH * Math.cos(this.dir)
+      x: this.p1.x + LOOP.LENGTH * Math.sin(this.angle),
+      y: this.p1.y + LOOP.LENGTH * Math.cos(this.angle)
     };
   }
 
@@ -157,7 +172,7 @@ class Loop extends Pod {
     this.ctx.beginPath();
     this.ctx.moveTo(p1.x, p1.y);
     this.ctx.lineTo(p2.x, p2.y);
-    this.ctx.strokeStyle = "#c1c1c1";
+    this.ctx.strokeStyle = this.color; // "#c1c1c1";
     // this.ctx.shadowBlur = 1;
     // this.ctx.shadowColor = "black";
     this.ctx.lineWidth = LOOP.WIDTH;
@@ -170,9 +185,12 @@ class Loop extends Pod {
         new Loop(
           this.world,
           this.ctx,
-          this.p2,
-          this.dir - (2 * Math.PI / LOOP.COUNT),
-          this.count - 1
+          {
+            pos: this.p2,
+            angle: this.angle - (2 * Math.PI / LOOP.COUNT),
+            count: this.count - 1,
+            color: this.color
+          }
         )
       );
     }
@@ -181,9 +199,12 @@ class Loop extends Pod {
         new Apodment(
           this.world,
           this.ctx,
-          this.p2,
-          this.dir - (2 * Math.PI / LOOP.COUNT) + Math.PI / 2,
-          randomInt(APODMENT.MIN_COUNT, APODMENT.MAX_COUNT)
+          {
+            pos: this.p2,
+            angle: this.angle - (2 * Math.PI / LOOP.COUNT) + Math.PI / 2,
+            count: randomInt(APODMENT.MIN_COUNT, APODMENT.MAX_COUNT),
+            color: randomColor()
+          }
         )
       );
     }
@@ -199,8 +220,8 @@ class Loop extends Pod {
 class Apodment extends Pod {
   calcP2() {
     this.p2 = {
-      x: this.p1.x + APODMENT.LENGTH * Math.sin(this.dir),
-      y: this.p1.y + APODMENT.LENGTH * Math.cos(this.dir)
+      x: this.p1.x + APODMENT.LENGTH * Math.sin(this.angle),
+      y: this.p1.y + APODMENT.LENGTH * Math.cos(this.angle)
     };
   }
 
@@ -209,7 +230,7 @@ class Apodment extends Pod {
     this.ctx.beginPath();
 		this.ctx.moveTo(p1.x, p1.y);
 		this.ctx.lineTo(p2.x, p2.y);
-    this.ctx.strokeStyle = "#c1c1c1";
+    this.ctx.strokeStyle = this.color; // "#c1c1c1";
     // this.ctx.shadowBlur = 1;
     // this.ctx.shadowColor = "black";
 		this.ctx.lineWidth = APODMENT.WIDTH;
@@ -225,9 +246,12 @@ class Apodment extends Pod {
           new Loop(
             this.world,
             this.ctx,
-            this.p2,
-            this.dir + Math.PI/2,
-            LOOP.COUNT
+            {
+              pos: this.p2,
+              angle: this.angle + Math.PI/2,
+              count: LOOP.COUNT,
+              color: randomColor()
+            }
           )
         );
       }
@@ -236,9 +260,12 @@ class Apodment extends Pod {
         new Apodment(
           this.world,
           this.ctx,
-          this.p2,
-          this.dir,
-          this.count - 1
+          {
+            pos: this.p2,
+            angle: this.angle,
+            count: this.count - 1,
+            color: this.color
+          }
         )
       );
     }
