@@ -68,11 +68,12 @@ class World {
     this.addPodToQueue(
       new Loop(
         this,
-        ctx,
         {
-          pos, angle,
+          pos,
+          angle,
           count: LOOP.COUNT,
-          color: randomColor()
+          color: randomColor(),
+          dir: randomBool() ? 1 : -1
         }
       )
     );
@@ -135,11 +136,10 @@ class World {
 
 // POD ---------------------------------------------------------------------------------------------
 
-// pod should take data
 class Pod {
-  constructor(world, ctx, data) {
+  constructor(world, data) {
     this.world = world;
-    this.ctx = ctx;
+    this.ctx = this.world.ctx;
     this.p1 = data.pos;
     this.angle = data.angle;
     this.count = data.count;
@@ -157,9 +157,14 @@ class Pod {
   }
 }
 
-// TODO: make the loop go in different directions
-// dir: clockwise, counter clockwise (should be named dir)
+// Loop
+
 class Loop extends Pod {
+  constructor(world, data) {
+    super(world, data);
+    this.dir = data.dir;
+  }
+
   calcP2() {
     this.p2 = {
       x: this.p1.x + LOOP.LENGTH * Math.sin(this.angle),
@@ -172,9 +177,7 @@ class Loop extends Pod {
     this.ctx.beginPath();
     this.ctx.moveTo(p1.x, p1.y);
     this.ctx.lineTo(p2.x, p2.y);
-    this.ctx.strokeStyle = this.color; // "#c1c1c1";
-    // this.ctx.shadowBlur = 1;
-    // this.ctx.shadowColor = "black";
+    this.ctx.strokeStyle = this.color;
     this.ctx.lineWidth = LOOP.WIDTH;
     this.ctx.stroke();
   }
@@ -184,38 +187,33 @@ class Loop extends Pod {
       this.world.addPodToQueue(
         new Loop(
           this.world,
-          this.ctx,
           {
             pos: this.p2,
-            angle: this.angle - (2 * Math.PI / LOOP.COUNT),
+            angle: this.angle + this.dir * (2 * Math.PI / LOOP.COUNT),
             count: this.count - 1,
-            color: this.color
+            color: this.color,
+            dir: this.dir
           }
         )
       );
     }
-    if (randomOdds(this.world.newPodOdds())) { // (this.count % Math.round(LOOP.COUNT / LOOP.APODMENT_ROWS) === 0) {
+    if (randomOdds(this.world.newPodOdds())) {
       this.world.addPodToQueue(
         new Apodment(
           this.world,
-          this.ctx,
           {
             pos: this.p2,
-            angle: this.angle - (2 * Math.PI / LOOP.COUNT) + Math.PI / 2,
+            angle: this.angle - (2 * Math.PI / LOOP.COUNT) - this.dir * Math.PI / 2,
             count: randomInt(APODMENT.MIN_COUNT, APODMENT.MAX_COUNT),
             color: randomColor()
           }
         )
       );
     }
-    // if it is almost done, only draw if you are coming from the positive side
-    // otherwise draw the next circle segment
-
-
-    // randomly choose to draw an apodment on the outside of the circle
-
   }
 }
+
+// Apodment
 
 class Apodment extends Pod {
   calcP2() {
@@ -230,9 +228,7 @@ class Apodment extends Pod {
     this.ctx.beginPath();
 		this.ctx.moveTo(p1.x, p1.y);
 		this.ctx.lineTo(p2.x, p2.y);
-    this.ctx.strokeStyle = this.color; // "#c1c1c1";
-    // this.ctx.shadowBlur = 1;
-    // this.ctx.shadowColor = "black";
+    this.ctx.strokeStyle = this.color;
 		this.ctx.lineWidth = APODMENT.WIDTH;
 		this.ctx.stroke();
   }
@@ -245,12 +241,12 @@ class Apodment extends Pod {
         this.world.addPodToQueue(
           new Loop(
             this.world,
-            this.ctx,
             {
               pos: this.p2,
               angle: this.angle + Math.PI/2,
               count: LOOP.COUNT,
-              color: randomColor()
+              color: randomColor(),
+              dir: randomBool() ? 1 : -1
             }
           )
         );
@@ -259,7 +255,6 @@ class Apodment extends Pod {
       this.world.addPodToQueue(
         new Apodment(
           this.world,
-          this.ctx,
           {
             pos: this.p2,
             angle: this.angle,
