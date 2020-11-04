@@ -47,8 +47,6 @@ const MODES = {
   }
 }
 
-const DRAW = MODES.PLANET;
-
 // GLOBAL ------------------------------------------------------------------------------------------
 
 // random
@@ -105,16 +103,31 @@ function distance(a, b) {
 // WORLD -------------------------------------------------------------------------------------------
 
 class World {
-  constructor(ctx, width, height) {
+  constructor(ctx, width, height, mode) {
     this.ctx = ctx;
     this.W = width;
     this.H = height;
+    this.selectMode(mode);
     this.planets = [];
     this.setup();
     this.drawBackground();
 
     this.animate = this.animate.bind(this);
     this.animate();
+  }
+
+  selectMode(mode) {
+    switch(mode) {
+      case 1:
+        this.mode = MODES.PLANET;
+        break;
+      case 2:
+        this.mode = MODES.LINES;
+        break;
+      default:
+        this.mode = MODES.ATOM;
+        break;
+    }
   }
 
   setup() {
@@ -126,7 +139,7 @@ class World {
 
   drawBackground() {
     this.ctx.rect(0, 0, this.W, this.H);
-    this.ctx.fillStyle = "#1c1c1c" + DRAW.FADE;
+    this.ctx.fillStyle = "#1c1c1c" + this.mode.FADE;
     this.ctx.fill();
   }
 
@@ -155,6 +168,7 @@ class Planet {
   constructor(world, id) {
     this.world = world;
     this.ctx = this.world.ctx;
+    this.mode = this.world.mode;
     this.id = id;
     this.color = randomColor();
     this.setup();
@@ -190,7 +204,7 @@ class Planet {
 
   draw() {
     // orbit
-    if(DRAW.ORBITS) {
+    if(this.mode.ORBITS) {
       this.ctx.beginPath();
       this.ctx.arc(this.world.W/2, this.world.H/2, this.orbit.radius, 0, 2 * Math.PI, false);
       this.ctx.strokeStyle = "#FFF1";
@@ -199,7 +213,7 @@ class Planet {
     }
 
     // planet
-    if(DRAW.PLANETS) {
+    if(this.mode.PLANETS) {
       this.ctx.beginPath();
       this.ctx.arc(this.p.x, this.p.y, 6, 0, 2 * Math.PI, false);
       this.ctx.fillStyle = colorString(this.color, 1);
@@ -209,7 +223,7 @@ class Planet {
 
   drawLine(planet2) {
     // line (if line mode is ON || is TICKS and should draw this tick)
-    if(DRAW.LINES === LINE_MODES.ON || (DRAW.LINES === LINE_MODES.TICKS && this.p.tick === 0)) {
+    if(this.mode.LINES === LINE_MODES.ON || (this.mode.LINES === LINE_MODES.TICKS && this.p.tick === 0)) {
       const grd = this.ctx.createLinearGradient(
         this.p.x,
         this.p.y,
@@ -226,7 +240,7 @@ class Planet {
       this.ctx.stroke();
     }
 
-    if (DRAW.MIDPOINTS) {
+    if (this.mode.MIDPOINTS) {
       // midpoint
       const midX = (this.p.x + planet2.p.x)/2;
       const midY = (this.p.y + planet2.p.y)/2;
@@ -264,5 +278,9 @@ window.onload = function () {
   canvas.width = W;
   canvas.height = H;
 
-  new World(ctx, W, H);
+  const urlParams = new URLSearchParams(window.location.search);
+  let mode = parseInt(urlParams.get('mode'));
+  if (!mode) mode = randomInt(1,3);
+
+  new World(ctx, W, H, mode);
 };
