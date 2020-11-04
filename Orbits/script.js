@@ -2,15 +2,56 @@
 
 const WORLD = {
   PLANETS: { min: 2, max: 5},
-  DRAW_INTERVAL: { min: 3, max: 8 } // min is faster
 };
 
 const PLANET = {
-  ORBIT_SPEED: {min: .03, max: .2},
-  ORBIT_RADIUS_MIN: 200
+  ORBIT_SPEED: {min: .005, max: .03},
+  ORBIT_RADIUS_GAP: 200,
+  DRAW_LINE_TICK: {min: 1, max: 6}
 }
 
+const LINE_MODES = {
+  TICKS: 1,
+  ON: 2,
+  OFF: 3
+}
+
+const MODES = {
+  ATOM: {
+    PLANETS: false,
+    ORBITS: false,
+    MIDPOINTS: true,
+    LINES: LINE_MODES.OFF,
+    FADE: "10"
+  },
+  LINES: {
+    PLANETS: false,
+    ORBITS: false,
+    MIDPOINTS: false,
+    LINES: LINE_MODES.TICKS,
+    FADE: "01"
+  },
+  PLANET: {
+    PLANETS: true,
+    ORBITS: true,
+    MIDPOINTS: true,
+    LINES: LINE_MODES.ON,
+    FADE: "88"
+  },
+  EXPERIMENT: {
+    PLANETS: false,
+    ORBITS: true,
+    MIDPOINTS: true,
+    LINES: LINE_MODES.ON,
+    FADE: "aa"
+  }
+}
+
+const DRAW = MODES.PLANET;
+
 // GLOBAL ------------------------------------------------------------------------------------------
+
+// random
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
@@ -25,8 +66,34 @@ function randomBool() {
 }
 
 function randomProp({ min, max }) {
+  if(min % 1 === 0 && max % 1 === 0) {
+    return randomInt(min, max);
+  }
   return randomDec(min, max);
 }
+
+// color
+
+function randomColor() {
+  var r = Math.round(Math.random() * 255);
+  var g = Math.round(Math.random() * 255);
+  var b = Math.round(Math.random() * 255);
+  return { r, g, b, };
+}
+
+function colorString({ r, g, b }, a) {
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function averageColor(c1, c2) {
+  return {
+    r: (c1.r + c2.r) / 2,
+    g: (c1.g + c2.g) / 2,
+    b: (c1.b + c2.b) / 2
+  }
+}
+
+// math
 
 function distance(a, b) {
 	return Math.sqrt(
@@ -55,12 +122,11 @@ class World {
     for(let i = 0; i < planetCount; ++i) {
       this.planets.push(new Planet(this, i));
     }
-    console.log(this.planets);
   }
 
   drawBackground() {
     this.ctx.rect(0, 0, this.W, this.H);
-    this.ctx.fillStyle = "#1c1c1caa";
+    this.ctx.fillStyle = "#1c1c1c" + DRAW.FADE;
     this.ctx.fill();
   }
 
@@ -77,7 +143,9 @@ class World {
         }
       })
     });
-    setTimeout(this.animate.bind(this), 64);
+    // setTimeout(this.animate.bind(this), 64); // makes it kinda flipbook-y
+    window.requestAnimationFrame(this.animate.bind(this));
+
   }
 }
 
@@ -88,21 +156,22 @@ class Planet {
     this.world = world;
     this.ctx = this.world.ctx;
     this.id = id;
+    this.color = randomColor();
     this.setup();
   }
 
   setup() {
     const direction = randomBool() ? 1 : -1;
-    console.log(direction);
     const angularVelocity = direction * randomProp(PLANET.ORBIT_SPEED);
-    console.log({angularVelocity});
-    const radius = randomInt(PLANET.ORBIT_RADIUS_MIN, this.world.W - PLANET.ORBIT_RADIUS_MIN) / 2;
+    const radius = randomInt(PLANET.ORBIT_RADIUS_GAP, this.world.W - PLANET.ORBIT_RADIUS_GAP) / 2;
+    const drawTick = randomProp(PLANET.DRAW_LINE_TICK);
+
     const angle = randomDec(0 , 2 * Math.PI);
     const x = this.world.W / 2 + radius * Math.cos(angle);
     const y = this.world.H / 2 + radius * Math.sin(angle);
 
-    this.orbit = { radius, angularVelocity};
-    this.p = { x , y , angle };
+    this.orbit = { radius, angularVelocity, drawTick };
+    this.p = { x , y , angle, tick: 0 };
   }
 
   move() {
@@ -110,32 +179,77 @@ class Planet {
     this.p = {
       x: this.world.W / 2 + this.orbit.radius * Math.cos(newAngle),
       y: this.world.H / 2 + this.orbit.radius * Math.sin(newAngle),
-      angle: newAngle
+      angle: newAngle,
+      tick: this.p.tick + 1
     };
+
+    if(this.p.tick === this.orbit.drawTick) {
+      this.p.tick = 0;
+    }
   }
 
   draw() {
-    this.ctx.beginPath();
-    this.ctx.arc(this.p.x, this.p.y, 6, 0, 2 * Math.PI, false);
-    this.ctx.fillStyle = "#FFF";
-    this.ctx.fill();
-  }
-
-  drawLine(planet2) {
-    if(distance(this.p, planet2.p) < 600) {
+    // orbit
+    if(DRAW.ORBITS) {
       this.ctx.beginPath();
-      this.ctx.moveTo(this.p.x, this.p.y);
-      this.ctx.lineTo(planet2.p.x, planet2.p.y);
-      this.ctx.strokeStyle = "#FFF3";
+      this.ctx.arc(this.world.W/2, this.world.H/2, this.orbit.radius, 0, 2 * Math.PI, false);
+      this.ctx.strokeStyle = "#FFF1";
       this.ctx.lineWidth = 1;
       this.ctx.stroke();
     }
 
-    // draw midpoint
-    this.ctx.beginPath();
-    this.ctx.arc((this.p.x + planet2.p.x)/2, (this.p.y + planet2.p.y)/2, 2, 0, 2 * Math.PI, false);
-    this.ctx.fillStyle = "#FFFa";
-    this.ctx.fill();
+    // planet
+    if(DRAW.PLANETS) {
+      this.ctx.beginPath();
+      this.ctx.arc(this.p.x, this.p.y, 6, 0, 2 * Math.PI, false);
+      this.ctx.fillStyle = colorString(this.color, 1);
+      this.ctx.fill();
+    }
+  }
+
+  drawLine(planet2) {
+    // line (if line mode is ON || is TICKS and should draw this tick)
+    if(DRAW.LINES === LINE_MODES.ON || (DRAW.LINES === LINE_MODES.TICKS && this.p.tick === 0)) {
+      const grd = this.ctx.createLinearGradient(
+        this.p.x,
+        this.p.y,
+        planet2.p.x,
+        planet2.p.y
+      );
+      grd.addColorStop(0, colorString(this.color, .1));
+      grd.addColorStop(1, colorString(planet2.color, .1));
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.p.x, this.p.y);
+      this.ctx.lineTo(planet2.p.x, planet2.p.y);
+      this.ctx.strokeStyle = grd;
+      this.ctx.lineWidth = 1;
+      this.ctx.stroke();
+    }
+
+    if (DRAW.MIDPOINTS) {
+      // midpoint
+      const midX = (this.p.x + planet2.p.x)/2;
+      const midY = (this.p.y + planet2.p.y)/2;
+      const aveColor = averageColor(this.color, planet2.color);
+      this.ctx.beginPath();
+      this.ctx.arc(midX, midY, 2, 0, 2 * Math.PI, false);
+      this.ctx.fillStyle = colorString(aveColor, .9);
+      this.ctx.fill();
+
+      // far point
+      const aveColorFar = averageColor(planet2.color, aveColor);
+      this.ctx.beginPath();
+      this.ctx.arc((midX + planet2.p.x)/2, (midY + planet2.p.y)/2, 1, 0, 2 * Math.PI, false);
+      this.ctx.fillStyle = colorString(aveColorFar, .8);;
+      this.ctx.fill();
+
+      // close point
+      const aveColorClose = averageColor(this.color, aveColor);
+      this.ctx.beginPath();
+      this.ctx.arc((midX + this.p.x)/2, (midY + this.p.y)/2, 1, 0, 2 * Math.PI, false);
+      this.ctx.fillStyle = colorString(aveColorClose, .8);
+      this.ctx.fill();
+    }
   }
 }
 
