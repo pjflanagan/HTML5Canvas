@@ -1,7 +1,7 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-  PLANETS: { min: 2, max: 5},
+  PLANETS: { min: 2, max: 5}, // TODO: this should be in the mode
 };
 
 const PLANET = {
@@ -305,10 +305,23 @@ class Planet {
     const mid2Y = (this.p.y + planet2.p.y)/2;
     const mid3X = (this.p.x + planet3.p.x)/2;
     const mid3Y = (this.p.y + planet3.p.y)/2;
+    const aveX = (mid2X + mid3X) / 2;
+    const aveY = (mid2Y + mid3Y) / 2;
+    const aveColor = averageColor(planet2.color, planet3.color);
+    const opacity = distance(this.p, { x: aveX, y: aveY }) / this.world.H + .05;
+    const grd = this.ctx.createLinearGradient(
+      this.p.x,
+      this.p.y,
+      aveX,
+      aveY
+    );
+    grd.addColorStop(0, colorString(this.color, opacity));
+    grd.addColorStop(1, colorString(aveColor, opacity));
+
     this.ctx.beginPath();
     this.ctx.moveTo(mid2X, mid2Y);
     this.ctx.lineTo(mid3X, mid3Y);
-    this.ctx.strokeStyle = colorString(this.color, .9);
+    this.ctx.strokeStyle = grd;
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
   }
