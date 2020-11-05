@@ -17,33 +17,46 @@ const LINE_MODES = {
 }
 
 const MODES = {
-  ATOM: {
-    PLANETS: false,
-    ORBITS: false,
-    MIDPOINTS: true,
-    LINES: LINE_MODES.OFF,
-    FADE: "10"
-  },
-  LINES: {
-    PLANETS: false,
-    ORBITS: false,
-    MIDPOINTS: false,
-    LINES: LINE_MODES.TICKS,
-    FADE: "01"
-  },
   PLANET: {
+    FADE: "88",
     PLANETS: true,
     ORBITS: true,
     MIDPOINTS: true,
     LINES: LINE_MODES.ON,
-    FADE: "88"
+    SECONDARY: LINE_MODES.OFF
   },
-  EXPERIMENT: {
+  ATOM: {
+    FADE: "10",
     PLANETS: false,
-    ORBITS: true,
+    ORBITS: false,
     MIDPOINTS: true,
-    LINES: LINE_MODES.ON,
-    FADE: "aa"
+    LINES: LINE_MODES.OFF,
+    SECONDARY: LINE_MODES.OFF
+  },
+  LINES: {
+    FADE: "01",
+    PLANETS: false,
+    ORBITS: false,
+    MIDPOINTS: false,
+    LINES: LINE_MODES.TICKS,
+    SECONDARY: LINE_MODES.OFF
+  },
+  TOROID: {
+    FADE: "01",
+    PLANETS: false,
+    ORBITS: false,
+    MIDPOINTS: false,
+    LINES: LINE_MODES.OFF,
+    SECONDARY: LINE_MODES.TICKS
+  },
+  TRIANGLE: {
+    FADE: "88",
+    PLANETS: false,
+    ORBITS: false,
+    MIDPOINTS: false,
+    LINES: LINE_MODES.OFF,
+    SECONDARY: LINE_MODES.OFF,
+    TRIANGLE: true
   }
 }
 
@@ -117,21 +130,22 @@ class World {
   }
 
   selectMode(mode) {
-    switch(mode) {
-      case 1:
-        this.mode = MODES.PLANET;
-        break;
-      case 2:
-        this.mode = MODES.LINES;
-        break;
-      default:
-        this.mode = MODES.ATOM;
-        break;
+    const modesList = Object.keys(MODES);
+    if (mode === undefined){
+      this.mode = MODES[modesList[randomInt(0, modesList.length-1)]];
+      return
+    }
+    const modeName = modesList[mode];
+    if(MODES[modeName]) {
+      this.mode = MODES[modeName];
+    } else {
+      this.mode = MODES[modesList[randomInt(0, modesList.length-1)]];
     }
   }
 
   setup() {
-    const planetCount = randomProp(WORLD.PLANETS);
+    let planetCount = randomProp(WORLD.PLANETS);
+    if(this.mode.SECONDARY !== LINE_MODES.OFF || this.mode.TRIANGLE) planetCount += 1;
     for(let i = 0; i < planetCount; ++i) {
       this.planets.push(new Planet(this, i));
     }
@@ -153,6 +167,17 @@ class World {
       this.planets.forEach(planet2 => {
         if(planet1.id < planet2.id) { // less than to only draw lines once
           planet1.drawLine(planet2);
+
+          if(this.mode.SECONDARY !== LINE_MODES.OFF || this.mode.TRIANGLE) {
+            this.planets.forEach(planet3 => {
+              if(this.mode.SECONDARY !== LINE_MODES.OFF && planet2.id < planet3.id) {
+                planet1.drawSecondLine(planet2, planet3);
+              }
+              if(this.mode.TRIANGLE && (planet3.id !== planet1.id || planet3.id !== planet2.id)) {
+                planet1.drawTriangle(planet2, planet3);
+              }
+            });
+          }
         }
       })
     });
@@ -221,9 +246,16 @@ class Planet {
     }
   }
 
+  shouldDrawLine(line) {
+    return (
+      line === LINE_MODES.ON // if the line mode is on
+      || (line === LINE_MODES.TICKS && this.p.tick === 0) // or set to ticks and it is time
+    );
+  }
+
   drawLine(planet2) {
     // line (if line mode is ON || is TICKS and should draw this tick)
-    if(this.mode.LINES === LINE_MODES.ON || (this.mode.LINES === LINE_MODES.TICKS && this.p.tick === 0)) {
+    if(this.shouldDrawLine(this.mode.LINES)) {
       const grd = this.ctx.createLinearGradient(
         this.p.x,
         this.p.y,
@@ -265,6 +297,41 @@ class Planet {
       this.ctx.fill();
     }
   }
+
+  drawSecondLine(planet2, planet3) {
+    if(!this.shouldDrawLine(this.mode.SECONDARY))
+      return;
+    const mid2X = (this.p.x + planet2.p.x)/2;
+    const mid2Y = (this.p.y + planet2.p.y)/2;
+    const mid3X = (this.p.x + planet3.p.x)/2;
+    const mid3Y = (this.p.y + planet3.p.y)/2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(mid2X, mid2Y);
+    this.ctx.lineTo(mid3X, mid3Y);
+    this.ctx.strokeStyle = colorString(this.color, .9);
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
+  }
+
+  drawTriangle(planet2, planet3) {
+    const opMidX = (planet2.p.x + planet3.p.x)/2;
+    const opMidY = (planet2.p.y + planet3.p.y)/2;
+    const opAveColor = averageColor(planet2.color, planet3.color);
+    const grd = this.ctx.createLinearGradient(
+      this.p.x,
+      this.p.y,
+      opMidX,
+      opMidY
+    );
+    grd.addColorStop(0, colorString(this.color, .6));
+    grd.addColorStop(1, colorString(opAveColor, .6));
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.p.x, this.p.y);
+    this.ctx.lineTo(planet2.p.x, planet2.p.y);
+    this.ctx.lineTo(planet3.p.x, planet3.p.y);
+    this.ctx.fillStyle = grd;
+    this.ctx.fill();
+  }
 }
 
 // MAIN --------------------------------------------------------------------------------------------
@@ -280,7 +347,5 @@ window.onload = function () {
 
   const urlParams = new URLSearchParams(window.location.search);
   let mode = parseInt(urlParams.get('mode'));
-  if (!mode) mode = randomInt(1,3);
-
   new World(ctx, W, H, mode);
 };
