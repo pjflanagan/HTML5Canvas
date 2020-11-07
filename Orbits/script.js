@@ -2,6 +2,7 @@
 
 const WORLD = {
   PLANETS: { min: 2, max: 5}, // TODO: this should be in the mode
+  SPEED: 1 // this should be in the mode
 };
 
 const PLANET = {
@@ -120,26 +121,33 @@ class World {
     this.ctx = ctx;
     this.W = width;
     this.H = height;
-    this.selectMode(mode);
+    this.initModeID = this.selectMode(mode);
     this.planets = [];
     this.setup();
     this.drawBackground();
 
     this.animate = this.animate.bind(this);
-    this.animate();
+    this.start();
+  }
+
+  randomMode() {
+    const modesList = Object.keys(MODES);
+    const modeID = randomInt(0, modesList.length);
+    this.mode = MODES[modesList[modeID]];
+    return modeID;
   }
 
   selectMode(mode) {
     const modesList = Object.keys(MODES);
     if (mode === undefined){
-      this.mode = MODES[modesList[randomInt(0, modesList.length-1)]];
-      return
+      return this.randomMode();
     }
     const modeName = modesList[mode];
     if(MODES[modeName]) {
       this.mode = MODES[modeName];
+      return mode;
     } else {
-      this.mode = MODES[modesList[randomInt(0, modesList.length-1)]];
+      return this.randomMode();
     }
   }
 
@@ -151,13 +159,19 @@ class World {
     }
   }
 
+  clearCanvas() {
+    this.ctx.rect(0, 0, this.W, this.H);
+    this.ctx.fillStyle = "#1c1c1c";
+    this.ctx.fill();
+  }
+
   drawBackground() {
     this.ctx.rect(0, 0, this.W, this.H);
     this.ctx.fillStyle = "#1c1c1c" + this.mode.FADE;
     this.ctx.fill();
   }
 
-  animate() {
+  drawFrame() {
     this.drawBackground();
     this.planets.forEach(planet => {
       planet.move();
@@ -181,9 +195,43 @@ class World {
         }
       })
     });
-    // setTimeout(this.animate.bind(this), 64); // makes it kinda flipbook-y
-    window.requestAnimationFrame(this.animate.bind(this));
+  }
 
+  animate() {
+    for(let i = 0; i < WORLD.SPEED; ++i) {
+      this.drawFrame();
+    }
+    // setTimeout(this.animate.bind(this), 64); // makes it kinda flipbook-y
+    this.animationReq = window.requestAnimationFrame(this.animate.bind(this));
+  }
+
+  start() {
+    this.isRunning = true;
+    this.animate();
+  }
+
+  pause() {
+    if(!!this.animationReq) {
+      window.cancelAnimationFrame(this.animationReq);
+    }
+    this.isRunning = false;
+  }
+
+  togglePlayPause() {
+    if(this.isRunning) {
+      this.pause()
+    } else {
+      this.start();
+    }
+    return this.isRunning;
+  }
+
+  random() {
+    this.pause();
+    this.clearCanvas();
+    this.planets = [];
+    this.setup();
+    this.start();
   }
 }
 
@@ -193,7 +241,6 @@ class Planet {
   constructor(world, id) {
     this.world = world;
     this.ctx = this.world.ctx;
-    this.mode = this.world.mode;
     this.id = id;
     this.color = randomColor();
     this.setup();
@@ -229,7 +276,7 @@ class Planet {
 
   draw() {
     // orbit
-    if(this.mode.ORBITS) {
+    if(this.world.mode.ORBITS) {
       this.ctx.beginPath();
       this.ctx.arc(this.world.W/2, this.world.H/2, this.orbit.radius, 0, 2 * Math.PI, false);
       this.ctx.strokeStyle = "#FFF1";
@@ -238,7 +285,7 @@ class Planet {
     }
 
     // planet
-    if(this.mode.PLANETS) {
+    if(this.world.mode.PLANETS) {
       this.ctx.beginPath();
       this.ctx.arc(this.p.x, this.p.y, 6, 0, 2 * Math.PI, false);
       this.ctx.fillStyle = colorString(this.color, 1);
@@ -255,7 +302,7 @@ class Planet {
 
   drawLine(planet2) {
     // line (if line mode is ON || is TICKS and should draw this tick)
-    if(this.shouldDrawLine(this.mode.LINES)) {
+    if(this.shouldDrawLine(this.world.mode.LINES)) {
       const grd = this.ctx.createLinearGradient(
         this.p.x,
         this.p.y,
@@ -272,7 +319,7 @@ class Planet {
       this.ctx.stroke();
     }
 
-    if (this.mode.MIDPOINTS) {
+    if (this.world.mode.MIDPOINTS) {
       // midpoint
       const midX = (this.p.x + planet2.p.x)/2;
       const midY = (this.p.y + planet2.p.y)/2;
@@ -299,7 +346,7 @@ class Planet {
   }
 
   drawSecondLine(planet2, planet3) {
-    if(!this.shouldDrawLine(this.mode.SECONDARY))
+    if(!this.shouldDrawLine(this.world.mode.SECONDARY))
       return;
     const mid2X = (this.p.x + planet2.p.x)/2;
     const mid2Y = (this.p.y + planet2.p.y)/2;
@@ -349,6 +396,10 @@ class Planet {
 
 // MAIN --------------------------------------------------------------------------------------------
 
+const G = {
+  sidebarOpen: false
+};
+
 window.onload = function () {
   const canvas = document.getElementById("pix");
   const ctx = canvas.getContext("2d");
@@ -360,5 +411,52 @@ window.onload = function () {
 
   const urlParams = new URLSearchParams(window.location.search);
   let mode = parseInt(urlParams.get('mode'));
-  new World(ctx, W, H, mode);
+  G.world = new World(ctx, W, H, mode);
+
+  decorateMode(G.world.initModeID);
 };
+
+function clearCanvas() {
+  G.world.clearCanvas();
+}
+
+function selectMode(mode) {
+  G.world.selectMode(mode);
+  decorateMode(mode);
+}
+
+function decorateMode(mode) {
+  $('.button.mode').removeClass('active');
+  $(`.button#mode-${mode}`).addClass('active');
+}
+
+function random() {
+  G.world.random();
+}
+
+function randomHover() {
+  $('.button#random').css({ background: colorString(randomColor(), .9) });
+  G.randomHoverTimeout = setTimeout(randomHover, 32);
+}
+
+function randomHoverOut() {
+  clearTimeout(G.randomHoverTimeout);
+}
+
+function togglePlayPause() {
+  const isRunning = G.world.togglePlayPause();
+  const text = (isRunning) ? 'Pause' : 'Play';
+  const addClass = isRunning ? "pause" : "play";
+  const removeClass = isRunning ? "play" : "pause";
+  $('#playPause').removeClass(removeClass);
+  $('#playPause').addClass(addClass);
+  $('#playPause').text(text);
+}
+
+function toggleSidebar() {
+  G.sidebarOpen = !G.sidebarOpen;
+  const sideBarAddClass = G.sidebarOpen ? "open" : "closed";
+  const sideBarRemoveClass = G.sidebarOpen ? "closed" : "open";
+  $('#sidebar').removeClass(sideBarRemoveClass);
+  $('#sidebar').addClass(sideBarAddClass);
+}

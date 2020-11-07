@@ -6,13 +6,27 @@
 	<title>Orbits</title>
   <link rel="stylesheet" type="text/css" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.4.0/lodash.js"></script>
-	<script src="script.js"></script>
+  <script src="script.js"></script>
 
 </head>
 <body>
 
+  <div class="sidebar closed" id="sidebar">
+    <div class="button mode" id="mode-0" onclick="selectMode(0)">Orbit</div>
+    <div class="button mode" id="mode-1" onclick="selectMode(1)">Atom</div>
+    <div class="button mode" id="mode-2" onclick="selectMode(2)">Connect</div>
+    <div class="button mode" id="mode-3" onclick="selectMode(3)">Midpoint</div>
+    <div class="button mode" id="mode-4" onclick="selectMode(4)">Shape</div>
+    <br />
+    <div class="button pause" id="playPause" onclick="togglePlayPause()">Pause</div>
+    <div class="button" onclick="clearCanvas()">Clear</div>
+    <br />
+    <div class="button" id="random" onmouseover="randomHover()" onmouseout="randomHoverOut()" onclick="random()">Random</div>
+  </div>
 
-<canvas id="pix"></canvas>
+
+  <canvas onclick="toggleSidebar()" id="pix"></canvas>
+
 
 
 </body></html>
