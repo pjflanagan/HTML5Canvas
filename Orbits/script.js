@@ -1,8 +1,8 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-  PLANETS: { min: 2, max: 5}, // TODO: this should be in the mode
-  SPEED: 1 // this should be in the mode
+  PLANETS: { min: 2, max: 5},
+  SPEED: { min: 1, max: 10}
 };
 
 const PLANET = {
@@ -121,7 +121,7 @@ class World {
     this.ctx = ctx;
     this.W = width;
     this.H = height;
-    this.initModeID = this.selectMode(mode);
+    this.selectMode(mode);
     this.planets = [];
     this.setup();
     this.drawBackground();
@@ -137,17 +137,20 @@ class World {
     return modeID;
   }
 
-  selectMode(mode) {
+  selectMode(modeID) {
     const modesList = Object.keys(MODES);
-    if (mode === undefined){
-      return this.randomMode();
+    if (modeID === undefined){
+      this.modeID = this.randomMode();
+      return;
     }
-    const modeName = modesList[mode];
+    const modeName = modesList[modeID];
     if(MODES[modeName]) {
       this.mode = MODES[modeName];
-      return mode;
+      this.modeID = modeID;
+      return;
     } else {
-      return this.randomMode();
+      this.modeID = this.randomMode();
+      return
     }
   }
 
@@ -198,7 +201,7 @@ class World {
   }
 
   animate() {
-    for(let i = 0; i < WORLD.SPEED; ++i) {
+    for(let i = 0; i < G.speed; ++i) {
       this.drawFrame();
     }
     // setTimeout(this.animate.bind(this), 64); // makes it kinda flipbook-y
@@ -397,7 +400,8 @@ class Planet {
 // MAIN --------------------------------------------------------------------------------------------
 
 const G = {
-  sidebarOpen: false
+  sidebarOpen: false,
+  speed: 1
 };
 
 window.onload = function () {
@@ -413,25 +417,28 @@ window.onload = function () {
   let mode = parseInt(urlParams.get('mode'));
   G.world = new World(ctx, W, H, mode);
 
-  decorateMode(G.world.initModeID);
+  decorateMode();
+  G.world.planets.forEach((planet) => {
+    decoratePlanet(planet);
+  });
 };
 
-function clearCanvas() {
-  G.world.clearCanvas();
-}
+// VISUAL --------------------------------------------------------------------------------------------
 
-function selectMode(mode) {
-  G.world.selectMode(mode);
-  decorateMode(mode);
-}
-
-function decorateMode(mode) {
+function decorateMode() {
+  const modeID = G.world.modeID;
+  const planetCount = G.world.planets.length;
   $('.button.mode').removeClass('active');
-  $(`.button#mode-${mode}`).addClass('active');
+  $(`.button#mode-${modeID}`).addClass('active');
+  $(`.button.mode`).removeClass('disabled');
+  if(planetCount < 3) {
+    $(`.button#mode-3`).addClass('disabled');
+    $(`.button#mode-4`).addClass('disabled');
+  }
 }
 
-function random() {
-  G.world.random();
+function decoratePlanet(planet) {
+  // append a planet to the thing
 }
 
 function randomHover() {
@@ -443,6 +450,39 @@ function randomHoverOut() {
   clearTimeout(G.randomHoverTimeout);
 }
 
+function toggleSidebar() {
+  G.sidebarOpen = !G.sidebarOpen;
+  const sideBarAddClass = G.sidebarOpen ? "open" : "closed";
+  const sideBarRemoveClass = G.sidebarOpen ? "closed" : "open";
+  $('#sidebar').removeClass(sideBarRemoveClass);
+  $('#sidebar').addClass(sideBarAddClass);
+}
+
+// INPUT --------------------------------------------------------------------------------------------
+
+function clearCanvas() {
+  G.world.clearCanvas();
+}
+
+function changeSpeed(speed) {
+  if((G.speed === WORLD.SPEED.max && speed === 1) || (G.speed === WORLD.SPEED.min && speed === -1))
+    return;
+  G.speed += speed;
+}
+
+function selectMode(mode) {
+  if(mode >= 3 && G.world.planets.length < 3) {
+    return;
+  }
+  G.world.selectMode(mode);
+  decorateMode();
+}
+
+function random() {
+  G.world.random();
+  decorateMode();
+}
+
 function togglePlayPause() {
   const isRunning = G.world.togglePlayPause();
   const text = (isRunning) ? 'Pause' : 'Play';
@@ -451,12 +491,4 @@ function togglePlayPause() {
   $('#playPause').removeClass(removeClass);
   $('#playPause').addClass(addClass);
   $('#playPause').text(text);
-}
-
-function toggleSidebar() {
-  G.sidebarOpen = !G.sidebarOpen;
-  const sideBarAddClass = G.sidebarOpen ? "open" : "closed";
-  const sideBarRemoveClass = G.sidebarOpen ? "closed" : "open";
-  $('#sidebar').removeClass(sideBarRemoveClass);
-  $('#sidebar').addClass(sideBarAddClass);
 }

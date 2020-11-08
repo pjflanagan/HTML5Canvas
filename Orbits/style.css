@@ -36,6 +36,11 @@ body {
   left: -120px;
 }
 
+.sidebar h1 {
+  font-size: 16px;
+  margin: 8px;
+}
+
 .sidebar .button {
   background: #FFF3;
   cursor: pointer;
@@ -49,6 +54,12 @@ body {
 
 .sidebar .button:hover, .sidebar .button.active {
   background: #FFF7;
+}
+
+.sidebar .button.disabled {
+  background: #FFF1;
+  cursor: default;
+  color: #FFF7;
 }
 
 div.button.play#playPause {
