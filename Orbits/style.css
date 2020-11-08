@@ -60,6 +60,7 @@ body {
   background: #FFF1;
   cursor: default;
   color: #FFF7;
+  pointer-events: none;
 }
 
 div.button.play#playPause {
