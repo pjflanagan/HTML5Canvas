@@ -1,89 +1,3 @@
-// GLOBAL ------------------------------------------------------------------------------------------
-
-// random
-
-const Random = {
-  int: (min, max) => Math.round(Math.random() * (max - min)) + min,
-  dec: (min, max) => Math.random() * (max - min) + min,
-  bool: () => Math.random() > 0.5,
-};
-
-Random.prop = ({ min, max }) => {
-  if (min % 1 === 0 && max % 1 === 0) {
-    return Random.int(min, max);
-  }
-  return Random.dec(min, max);
-};
-
-Random.prop2 = ({ min, max }, comp) => Random.prop({ min, max }) * comp;
-
-// color
-
-class Color {
-  constructor(color) {
-    if (!!color) {
-      const { r, g, b, a } = color;
-      this.r = r;
-      this.g = g;
-      this.b = b;
-      this.a = a;
-    } else {
-      this.random();
-    }
-  }
-
-  random() {
-    this.r = Random.int(0, 255);
-    this.g = Random.int(0, 255);
-    this.b = Random.int(0, 255);
-    this.a = Random.dec(0, 1);
-  }
-
-  setOpacity(a) {
-    this.a = a;
-  }
-
-  toString() {
-    return `rgba(${this.r}, ${this.g}, ${this.b}, ${this.a})`;
-  }
-
-  averageColor(c2) {
-    return new Color({
-      r: (this.r + c2.r) / 2,
-      g: (this.g + c2.g) / 2,
-      b: (this.b + c2.b) / 2,
-      a: (this.a + c2.a) / 2,
-    });
-  }
-
-  makeThreshold(c2, colorCount) {
-    const colors = [this];
-    const delta = {
-      r: c2.r - this.r,
-      g: c2.g - this.g,
-      b: c2.b - this.b,
-      a: c2.a - this.a,
-    };
-    for (let i = 1; i <= colorCount; ++i) {
-      colors.push(
-        new Color({
-          r: this.r + (delta.r * i) / colorCount,
-          g: this.g + (delta.g * i) / colorCount,
-          b: this.b + (delta.b * i) / colorCount,
-          a: this.a + (delta.a * i) / colorCount,
-        })
-      );
-    }
-    return colors;
-  }
-}
-
-// math
-
-function distance(a, b) {
-  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-}
-
 // WORLD -------------------------------------------------------------------------------------------
 
 const WORLD = {
@@ -119,29 +33,39 @@ class World {
 
     const starCount = Random.prop(WORLD.STARS);
     for (let i = 0; i < starCount; ++i) {
-      this.bodies.push(new Star(this, 0));
+      this.bodies.push(new Star(this, 0, i));
+    }
+
+    const starCount2 = Random.prop(WORLD.STARS);
+    for (let i = 0; i < starCount2; ++i) {
+      this.bodies.push(new Star(this, 1, i));
     }
 
     const bgMoonCount = Random.prop(WORLD.BACKGROUND_MOONS);
     for (let i = 0; i < bgMoonCount; ++i) {
-      this.bodies.push(new Moon(this, 1));
+      this.bodies.push(new Moon(this, 2, i));
     }
 
     const bgMoonCount2 = Random.prop(WORLD.BACKGROUND_MOONS);
     for (let i = 0; i < bgMoonCount2; ++i) {
-      this.bodies.push(new Moon(this, 3));
+      this.bodies.push(new Moon(this, 3, i));
     }
 
-    this.bodies.push(new Planet(this, 4));
+    this.bodies.push(new Planet(this, 4, 0));
 
     const fgMoonCount = Random.prop(WORLD.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount; ++i) {
-      this.bodies.push(new Moon(this, 5));
+      this.bodies.push(new Moon(this, 5, i));
     }
 
     const fgMoonCount2 = Random.prop(WORLD.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount2; ++i) {
-      this.bodies.push(new Moon(this, 6));
+      this.bodies.push(new Moon(this, 6, i));
+    }
+
+    const starCount3 = Random.prop(WORLD.STARS);
+    for (let i = 0; i < starCount3; ++i) {
+      this.bodies.push(new Star(this, 7, i));
     }
   }
 
@@ -207,155 +131,169 @@ const BODY = {
 };
 
 class Body {
-  constructor(world, layer) {
+  constructor(world, layer, id) {
     this.world = world;
     this.ctx = this.world.ctx;
+    this.id = `${layer}-${id}`;
+    this.prop = {};
+    this.pos = {};
     this.layer = layer;
-    this.layerStrength = 18 / (layer + 1) + 4; // TODO: use constant
+    this.layerStrength = Random.dec(.9,1.1) * (18 / (0.1 * layer + 0.8) + 4); // TODO: use constant
+
+    this.setup();
+
+    // changing pos
+    this.setupColors();
+    this.pos.x = this.prop.center.x;
+    this.pos.y = this.prop.center.y;
+
   }
 
   setupColors() {
-    const smallColorRadius = Random.int(
-      this.prop.radius / 4,
-      this.prop.radius / 3
-    ); // TODO: use random predefined
-    const smallColorCenter = {
-      x:
-        this.prop.central.x +
-        Random.int(-this.prop.radius / 2, this.prop.radius / 2), // TODO: use random predefined
-      y:
-        this.prop.central.y +
-        Random.int(-this.prop.radius / 2, this.prop.radius / 2),
+    const dir = Random.bool() ? 1 : -1;
+    this.prop.colorProp = {
+      angularVelocity: dir * Random.dec(0.001, 0.003),
+      resizeFrequency: Random.dec(0.1, 0.3),
     };
-    this.prop.colorDelta = {
-      x: smallColorCenter.x - this.prop.central.x,
-      y: smallColorCenter.y - this.prop.central.y,
-      r: smallColorRadius - this.prop.radius,
+    // color is relative to the actual center
+    this.pos.colorPos = {
+      angle: Random.dec(-Math.PI, Math.PI),
+      distanceFromCenter: Random.int(
+        this.prop.radius / 4,
+        this.prop.radius / 3
+      ),
     };
   }
 
   move(angle, strength) {
     // move towards the new wiggle point
     // if we are there then select a new wiggle point
-    const { central } = this.prop;
-    this.pos = {
-      x: central.x + this.layerStrength * strength * Math.cos(angle),
-      y: central.y + this.layerStrength * strength * Math.sin(angle),
+    const { center, colorProp, radius } = this.prop;
+    const shiftedCenter = {
+      x: center.x + this.layerStrength * strength * Math.cos(angle),
+      y: center.y + this.layerStrength * strength * Math.sin(angle),
     };
+
+    this.pos.colorPos.angle =
+      this.pos.colorPos.angle + colorProp.angularVelocity;
+    this.pos.colorPos.smallRadius =
+      radius / 4 +
+      (0.5 *
+        Math.sin(
+          Math.PI * colorProp.resizeFrequency * this.pos.colorPos.angle
+        ) +
+        1) *
+        (radius / 3);
+    this.pos.colorPos.distanceFromCenter = 3 * radius / 4 - this.pos.colorPos.smallRadius;
+
+    // TODO: for now just use shiftedCenter but I want them to bob
+    this.pos.x = shiftedCenter.x;
+    this.pos.y = shiftedCenter.y;
   }
 
   draw() {
     // planet
-    const { colorDelta, colors, radius } = this.prop;
-    for (let i = 0; i < colors.length; ++i) {
+    const { colorSpectrum, radius } = this.prop;
+    const { colorPos } = this.pos;
+    const colorDelta = {
+      x: colorPos.distanceFromCenter * Math.cos(colorPos.angle),
+      y: colorPos.distanceFromCenter * Math.sin(colorPos.angle),
+      r: radius - colorPos.smallRadius,
+    };
+    for (let i = 0; i < colorSpectrum.length; ++i) {
       this.ctx.beginPath();
       this.ctx.arc(
-        this.pos.x - (colorDelta.x * i) / colors.length,
-        this.pos.y - (colorDelta.y * i) / colors.length,
-        radius + (colorDelta.r * i) / colors.length,
+        this.pos.x - (colorDelta.x * i) / colorSpectrum.length,
+        this.pos.y - (colorDelta.y * i) / colorSpectrum.length,
+        radius - (colorDelta.r * i) / colorSpectrum.length,
         0,
         2 * Math.PI,
         false
       );
-      this.ctx.fillStyle = colors[i].toString();
+      this.ctx.fillStyle = colorSpectrum[i].toString();
       this.ctx.fill();
     }
   }
 }
 
-class Star extends Body {
-  constructor(world, layer) {
-    super(world, layer);
+class Moon extends Body {
+  constructor(world, layer, id) {
+    super(world, layer, id);
+  }
 
+  setup() {
+    const color = new Color(); // random color
+    color.setOpacity(1);
+    // const toColor = color.randomSimilar(64);
+    const toColor = new Color(); // random color
+    toColor.setOpacity(1);
+
+    // unchanging props
+    const radius = Random.prop2(BODY.MOON.RADIUS, this.world.H);
+    this.prop = {
+      center: {
+        x: Random.int(radius * 2, this.world.W - radius * 2),
+        y: Random.int(radius, this.world.H - radius * 2),
+      }, // planet is in the center
+      radius,
+      colorSpectrum: color.makeSpectrum(toColor, 3), // TODO: use random predefined count
+    };
+    Random.insertRandom(this.prop.colorSpectrum, new Color());
+  }
+}
+
+class Planet extends Body {
+  constructor(world, layer, id) {
+    super(world, layer, id);
+  }
+
+  setup() {
+    const color = new Color(); // random color TODO: use a pallet
+    color.setOpacity(1);
+    const toColor = new Color();
+    toColor.setOpacity(1);
+
+    // unchanging props
+    this.prop = {
+      center: { x: this.world.W / 2, y: this.world.H / 2 }, // planet is in the center
+      radius: Random.prop2(BODY.PLANET.RADIUS, this.world.H),
+      colorSpectrum: color.makeSpectrum(toColor, 5), // TODO: use random predefined count
+    };
+    Random.insertRandom(this.prop.colorSpectrum, new Color());
+  }
+
+  // TODO: we wiggle around the center point, the center point can shift based on where the mouse is
+}
+
+class Star extends Body {
+  constructor(world, layer, id) {
+    super(world, layer, id);
+  }
+
+  setup() {
     const color = new Color({
       r: 248,
       g: 255,
       b: 168,
-      a: Random.dec(.5, 1),
+      a: Random.dec(0.5, 1),
     });
     const toColor = new Color({
       r: 255,
       g: 255,
       b: 255,
-      a: Random.dec(.5, 1),
+      a: Random.dec(0.5, 1),
     });
 
     // unchanging props
     this.prop = {
-      central: {
-        x: Random.int(
-          0,
-          this.world.W
-        ),
-        y: Random.int(
-          0,
-          this.world.H
-        ),
+      center: {
+        x: Random.int(0, this.world.W),
+        y: Random.int(0, this.world.H),
       }, // planet is in the center
-      radius: Random.prop2(BODY.STAR.RADIUS, world.H),
-      colors: color.makeThreshold(toColor, 3), // TODO: use random predefined count
+      radius: Random.prop2(BODY.STAR.RADIUS, this.world.H),
+      colorSpectrum: color.makeSpectrum(toColor, 3), // TODO: use random predefined count
     };
-    this.setupColors();
-
-    // changing pos
-    this.pos = this.prop.central;
   }
-}
-
-class Moon extends Body {
-  constructor(world, layer) {
-    super(world, layer);
-
-    const color = new Color(); // random color
-    color.setOpacity(1);
-    const toColor = new Color();
-    toColor.setOpacity(1);
-
-    // unchanging props
-    const radius = Random.prop2(BODY.MOON.RADIUS, world.H);
-    this.prop = {
-      central: {
-        x: Random.int(
-          radius * 2,
-          this.world.W - radius * 2
-        ),
-        y: Random.int(
-          radius,
-          this.world.H - radius * 2
-        ),
-      }, // planet is in the center
-      radius,
-      colors: color.makeThreshold(toColor, 3), // TODO: use random predefined count
-    };
-    this.setupColors();
-
-    // changing pos
-    this.pos = this.prop.central;
-  }
-}
-
-class Planet extends Body {
-  constructor(world, layer) {
-    super(world, layer);
-
-    const color = new Color(); // random color
-    color.setOpacity(1);
-    const toColor = new Color();
-    toColor.setOpacity(1);
-
-    // unchanging props
-    this.prop = {
-      central: { x: this.world.W / 2, y: this.world.H / 2 }, // planet is in the center
-      radius: Random.prop2(BODY.PLANET.RADIUS, world.H),
-      colors: color.makeThreshold(toColor, 5), // TODO: use random predefined count
-    };
-    this.setupColors();
-
-    // changing pos
-    this.pos = this.prop.central;
-  }
-
-  // TODO: we wiggle around the central point, the central point can shift based on where the mouse is
 }
 
 // MAIN ---------------------------------------------------------------------------------------------
