@@ -75,6 +75,10 @@ class Color {
     return `rgba(${this.r}, ${this.g}, ${this.b}, ${this.a})`;
   }
 
+  toStringA(a) {
+    return `rgba(${this.r}, ${this.g}, ${this.b}, ${a})`;
+  }
+
   averageColor(c2) {
     return new Color({
       r: (this.r + c2.r) / 2,

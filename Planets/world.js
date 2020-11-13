@@ -70,8 +70,9 @@ class World {
   }
 
   drawBackground() {
+    this.ctx.beginPath();
     this.ctx.rect(0, 0, this.W, this.H);
-    this.ctx.fillStyle = "#1c1c1c";
+    this.ctx.fillStyle = "#1c1c1c"; // "#faead0";
     this.ctx.fill();
 
     // TODO: more interesting stuff here as well
@@ -136,7 +137,7 @@ class Body {
     this.ctx = this.world.ctx;
     this.id = `${layer}-${id}`;
     this.prop = {};
-    this.pos = {};
+    this.state = {};
     this.layer = layer;
     this.layerStrength = Random.dec(.9,1.1) * (18 / (0.1 * layer + 0.8) + 4); // TODO: use constant
 
@@ -144,8 +145,10 @@ class Body {
 
     // changing pos
     this.setupColors();
-    this.pos.x = this.prop.center.x;
-    this.pos.y = this.prop.center.y;
+    this.state.pos = {
+      x: this.prop.center.x,
+      y: this.prop.center.y
+    }
 
   }
 
@@ -156,7 +159,7 @@ class Body {
       resizeFrequency: Random.dec(0.1, 0.3),
     };
     // color is relative to the actual center
-    this.pos.colorPos = {
+    this.state.colorPos = {
       angle: Random.dec(-Math.PI, Math.PI),
       distanceFromCenter: Random.int(
         this.prop.radius / 4,
@@ -165,36 +168,37 @@ class Body {
     };
   }
 
-  move(angle, strength) {
+  moveBody(angle, strength) {
     // move towards the new wiggle point
     // if we are there then select a new wiggle point
-    const { center, colorProp, radius } = this.prop;
+    const { center } = this.prop;
     const shiftedCenter = {
       x: center.x + this.layerStrength * strength * Math.cos(angle),
       y: center.y + this.layerStrength * strength * Math.sin(angle),
     };
 
-    this.pos.colorPos.angle =
-      this.pos.colorPos.angle + colorProp.angularVelocity;
-    this.pos.colorPos.smallRadius =
+    // TODO: for now just use shiftedCenter but I want them to bob
+    this.state.pos = shiftedCenter;
+  }
+
+  moveColors() {
+    const { colorProp, radius } = this.prop;
+    this.state.colorPos.angle = this.state.colorPos.angle + colorProp.angularVelocity;
+    this.state.colorPos.smallRadius =
       radius / 4 +
       (0.5 *
         Math.sin(
-          Math.PI * colorProp.resizeFrequency * this.pos.colorPos.angle
+          Math.PI * colorProp.resizeFrequency * this.state.colorPos.angle
         ) +
         1) *
         (radius / 3);
-    this.pos.colorPos.distanceFromCenter = 3 * radius / 4 - this.pos.colorPos.smallRadius;
-
-    // TODO: for now just use shiftedCenter but I want them to bob
-    this.pos.x = shiftedCenter.x;
-    this.pos.y = shiftedCenter.y;
+    this.state.colorPos.distanceFromCenter = 3 * radius / 4 - this.state.colorPos.smallRadius;
   }
 
-  draw() {
+  drawSpectrum() {
     // planet
     const { colorSpectrum, radius } = this.prop;
-    const { colorPos } = this.pos;
+    const { colorPos, pos } = this.state;
     const colorDelta = {
       x: colorPos.distanceFromCenter * Math.cos(colorPos.angle),
       y: colorPos.distanceFromCenter * Math.sin(colorPos.angle),
@@ -203,8 +207,8 @@ class Body {
     for (let i = 0; i < colorSpectrum.length; ++i) {
       this.ctx.beginPath();
       this.ctx.arc(
-        this.pos.x - (colorDelta.x * i) / colorSpectrum.length,
-        this.pos.y - (colorDelta.y * i) / colorSpectrum.length,
+        pos.x - (colorDelta.x * i) / colorSpectrum.length,
+        pos.y - (colorDelta.y * i) / colorSpectrum.length,
         radius - (colorDelta.r * i) / colorSpectrum.length,
         0,
         2 * Math.PI,
@@ -213,8 +217,40 @@ class Body {
       this.ctx.fillStyle = colorSpectrum[i].toString();
       this.ctx.fill();
     }
+
+    // overlay
+    const grd = this.ctx.createRadialGradient(pos.x - colorDelta.x, pos.y - colorDelta.y, 0, pos.x - colorDelta.x, pos.y - colorDelta.y, radius);
+    grd.addColorStop(0, colorSpectrum[colorSpectrum.length-1].toStringA(.2));
+    grd.addColorStop(1, colorSpectrum[colorSpectrum.length-1].toStringA(.8));
+    this.ctx.beginPath();
+    this.ctx.arc(
+      pos.x,
+      pos.y,
+      radius,
+      0,
+      2 * Math.PI,
+      false
+    );
+    this.ctx.fillStyle = grd;
+    this.ctx.fill();
+  }
+
+  drawTrail() {
+    const { radius, colorSpectrum } = this.prop;
+    const { x, y } = this.state.pos;
+    const grd = this.ctx.createLinearGradient(x, y-radius, x, y+radius);
+    grd.addColorStop(0, colorSpectrum[0].toStringA(.08));
+    grd.addColorStop(.25, colorSpectrum[0].toStringA(0));
+    grd.addColorStop(.75, colorSpectrum[0].toStringA(0));
+    grd.addColorStop(1, colorSpectrum[0].toStringA(.08));
+    this.ctx.beginPath();
+    this.ctx.rect(x, y-radius, this.world.W, 2 * radius);
+    this.ctx.fillStyle = grd;
+    this.ctx.fill();
   }
 }
+
+// MOON ---------------------------------------------------------------------------------------------
 
 class Moon extends Body {
   constructor(world, layer, id) {
@@ -233,14 +269,26 @@ class Moon extends Body {
     this.prop = {
       center: {
         x: Random.int(radius * 2, this.world.W - radius * 2),
-        y: Random.int(radius, this.world.H - radius * 2),
+        y: Random.int(0, this.world.H),
       }, // planet is in the center
       radius,
       colorSpectrum: color.makeSpectrum(toColor, 3), // TODO: use random predefined count
     };
     Random.insertRandom(this.prop.colorSpectrum, new Color());
   }
+
+  move(angle, strength) {
+    this.moveBody(angle, strength);
+    this.moveColors();
+  }
+
+  draw() {
+    this.drawTrail();
+    this.drawSpectrum();
+  }
 }
+
+// PLANET ---------------------------------------------------------------------------------------------
 
 class Planet extends Body {
   constructor(world, layer, id) {
@@ -262,8 +310,20 @@ class Planet extends Body {
     Random.insertRandom(this.prop.colorSpectrum, new Color());
   }
 
+  move(angle, strength) {
+    this.moveBody(angle, strength);
+    this.moveColors();
+  }
+
+  draw() {
+    this.drawTrail();
+    this.drawSpectrum();
+  }
+
   // TODO: we wiggle around the center point, the center point can shift based on where the mouse is
 }
+
+// STAR ---------------------------------------------------------------------------------------------
 
 class Star extends Body {
   constructor(world, layer, id) {
@@ -271,19 +331,6 @@ class Star extends Body {
   }
 
   setup() {
-    const color = new Color({
-      r: 248,
-      g: 255,
-      b: 168,
-      a: Random.dec(0.5, 1),
-    });
-    const toColor = new Color({
-      r: 255,
-      g: 255,
-      b: 255,
-      a: Random.dec(0.5, 1),
-    });
-
     // unchanging props
     this.prop = {
       center: {
@@ -291,8 +338,28 @@ class Star extends Body {
         y: Random.int(0, this.world.H),
       }, // planet is in the center
       radius: Random.prop2(BODY.STAR.RADIUS, this.world.H),
-      colorSpectrum: color.makeSpectrum(toColor, 3), // TODO: use random predefined count
+      color: new Color()
     };
+  }
+
+  move(angle, strength) {
+    this.moveBody(angle, strength);
+  }
+
+  draw() {
+    const { radius, color } = this.prop;
+    const { pos } = this.state;
+    this.ctx.beginPath();
+    this.ctx.arc(
+      pos.x,
+      pos.y,
+      radius,
+      0,
+      2 * Math.PI,
+      false
+    );
+    this.ctx.fillStyle = color.toString();
+    this.ctx.fill();
   }
 }
 
