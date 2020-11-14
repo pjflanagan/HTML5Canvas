@@ -2,7 +2,7 @@
 // CONST -------------------------------------------------------------------------------------------
 
 const WORLD = {
-	BIRD_COUNT: 2000,
+	BIRD_COUNT: 50,
 	CLOSE_TO_POINT_DISTANCE: 40,
 	LEADER_POINT_BOUNDS: 140,
 	CLOSE_TO_EDGE_BOUNDS: 40
@@ -138,18 +138,11 @@ class World {
 			return -b.z;
 		})
 		// const sortedBirds = this.birds;
-		let sum = 0;
-		let count = 1;
 		for (let i = WORLD.BIRD_COUNT - 1; i >= 0; i--) {
 			const bird = sortedBirds[i];
 			bird.draw();
 			bird.move();
-			if (bird.y < 0) {
-				count += 1;
-				sum += bird.getAngleTo(bird.getTo()).aXY;
-			}
 		}
-		// console.log(sum / count);
 	}
 
 	// HELPER
@@ -210,8 +203,8 @@ class Bird {
 		this.world = world;
 
 		const { x, y, z } = this.world.getRandomCoords();
-		this.aXY = randomDec(0, Math.TWO_PI);
-		this.aZ = randomDec(0, Math.TWO_PI);
+		this.aXY = randomDec(-Math.PI, Math.PI);
+		this.aZ = randomDec(-Math.PI, Math.PI);
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -285,12 +278,18 @@ class Bird {
 
 	getAngleTo(to) {
 		const dx = this.x - to.x, dy = this.y - to.y, dz = this.z - to.z;
-		return { aXY: -1.0 * Math.atan2(dx, dy) + Math.HALF_PI, aZ: -1.0 * Math.atan2(dx, dz) };
+		return { 
+      aXY: -1.0 * Math.atan2(dx, dy) + Math.HALF_PI, 
+      // aZ: -1.0 * Math.atan2(dx, dz) 
+    };
 	}
 
 	getDeltaAngle(to) {
 		const { aXY, aZ } = this.getAngleTo(to);
-		return { daXY: this.va * (this.aXY - aXY) / 4, daZ: this.va * (this.aZ - aZ) / 4 }; // Math.sign
+		return { 
+      daXY: this.va * (this.aXY - aXY) / 4, 
+      // daZ: this.va * (this.aZ - aZ) / 4 
+    };
 	}
 
 	move() {
@@ -298,15 +297,15 @@ class Bird {
 
 		const { daXY, daZ } = this.getDeltaAngle(to);
 		this.aXY = this.aXY - daXY;
-		this.aZ = this.aZ - daZ;
+		// this.aZ = this.aZ - daZ;
 
 		const vx = Math.cos(this.aXY) * this.v;
 		const vy = Math.sin(this.aXY) * this.v;
-		const vz = Math.cos(this.aZ) * this.v;
+		// const vz = Math.cos(this.aZ) * this.v;
 
 		this.x = this.x - vx;
 		this.y = this.y - vy;
-		this.z = this.z - vz;
+		// this.z = this.z - vz;
 	}
 
 	draw() {
@@ -317,7 +316,16 @@ class Bird {
 		this.ctx.lineTo(this.x + Math.cos(this.aXY + BIRD.ANGLE) * height, this.y + Math.sin(this.aXY + BIRD.ANGLE) * height);
 		this.ctx.fillStyle = this.getColor();
 		this.ctx.fill();
-		this.ctx.closePath();
+    this.ctx.closePath();
+    
+
+    const to = this.getTo();
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.x, this.y);
+    this.ctx.lineTo(to.x, to.y);
+    this.ctx.strokeStyle = this.getColor() + "4";
+    this.ctx.stroke();
+		
 	}
 
 	getButt() {
@@ -329,11 +337,11 @@ class Bird {
 	}
 
 	getColor() {
-		// if (this.isFollowing) {
-		// 	return '#00F';
-		// }
-		// return '#F00';
-		return `rgba(0, 0, 0, ${this.world.zScale(this.z)})`;
+		if (this.isFollowing) {
+			return '#00F';
+		}
+		return '#F00';
+		// return `rgba(0, 0, 0, ${this.world.zScale(this.z)})`;
 	}
 }
 

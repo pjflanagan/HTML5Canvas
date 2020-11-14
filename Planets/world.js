@@ -33,7 +33,7 @@ class World {
 
     const starCount = Random.prop(WORLD.STARS);
     for (let i = 0; i < starCount; ++i) {
-      this.bodies.push(new Star(this, 0, i));
+      this.bodies.push(new Star(this, 0, i)); 
     }
 
     const starCount2 = Random.prop(WORLD.STARS);
@@ -52,20 +52,21 @@ class World {
     }
 
     this.bodies.push(new Planet(this, 4, 0));
+    this.bodies.push(new Ship(this, 5, 0));
 
     const fgMoonCount = Random.prop(WORLD.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount; ++i) {
-      this.bodies.push(new Moon(this, 5, i));
+      this.bodies.push(new Moon(this, 6, i));
     }
 
     const fgMoonCount2 = Random.prop(WORLD.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount2; ++i) {
-      this.bodies.push(new Moon(this, 6, i));
+      this.bodies.push(new Moon(this, 7, i));
     }
 
     const starCount3 = Random.prop(WORLD.STARS);
     for (let i = 0; i < starCount3; ++i) {
-      this.bodies.push(new Star(this, 7, i));
+      this.bodies.push(new Star(this, 8, i));
     }
   }
 
@@ -120,12 +121,13 @@ class World {
 
 // BODIES ---------------------------------------------------------------------------------------------
 
+// TODO: move more properties into here
 const BODY = {
   STAR: {
     RADIUS: { min: 0.0008, max: 0.002 },
   },
   MOON: {
-    RADIUS: { min: 0.04, max: 0.08 }, // 0.01 0.06
+    RADIUS: { min: 0.02, max: 0.06 }, // 0.01 0.06
   },
   PLANET: {
     RADIUS: { min: 0.36, max: 0.42 }, // proportional to world 0.2, 0.3
@@ -140,9 +142,9 @@ class Body {
     this.prop = {};
     this.state = {};
     this.layer = layer;
-    this.layerStrength = Random.dec(.9,1.1) * (18 / (0.1 * layer + 0.8) + 4); // TODO: use constant
 
     this.setup();
+    this.prop.layerStrength = Random.dec(.9,1.1) * (18 / (0.1 * layer + 0.8) + 4); // TODO: use constant
 
     // changing pos
     this.setupColors();
@@ -173,14 +175,14 @@ class Body {
 
   setOffsetTo() {
     const angle = Random.dec(-Math.PI, Math.PI)
-    const radius = Random.dec(0, 40);
+    const radius = Random.dec(0, this.prop.offsetRadiusMax);
     this.state.offset.to = {
       x: radius * Math.cos(angle),
       y: radius * Math.sin(angle),
     };
   }
 
-  reachedOffset() {
+  hasReachedOffset() {
     const { offset } = this.state;
     const dist = distance(offset, offset.to);
     return dist < 4;
@@ -189,22 +191,22 @@ class Body {
   moveBody(angle, strength) {
     // move towards the new wiggle point
     // if we are there then select a new wiggle point
-    const { center } = this.prop;
+    const { center, layerStrength } = this.prop;
     const shiftedCenter = {
-      x: center.x + this.layerStrength * strength * Math.cos(angle),
-      y: center.y + this.layerStrength * strength * Math.sin(angle),
+      x: center.x + layerStrength * strength * Math.cos(angle),
+      y: center.y + layerStrength * strength * Math.sin(angle),
     };
 
     // move to a point at a random and angle from center
-    if (this.reachedOffset()) {
+    if (this.hasReachedOffset()) {
       this.setOffsetTo();
     }
 
     // calculate the delta x and y for the new
     const { x, y, to } = this.state.offset;
     const offsetAngle = Math.atan2(to.y - y, to.x - x);
-    this.state.offset.x = x + 0.1 * Math.cos(offsetAngle);
-    this.state.offset.y = y + 0.1 * Math.sin(offsetAngle);
+    this.state.offset.x = x + this.prop.offsetSpeed * Math.cos(offsetAngle);
+    this.state.offset.y = y + this.prop.offsetSpeed * Math.sin(offsetAngle);
 
     this.state.pos = {
       x: shiftedCenter.x + this.state.offset.x,
@@ -304,6 +306,8 @@ class Moon extends Body {
       },
       radius,
       colorSpectrum: color.makeSpectrum(toColor, 3), // TODO: use random predefined count
+      offsetRadiusMax: 40,
+      offsetSpeed: 0.1,
     };
     const randomStripeColor = new Color();
     randomStripeColor.setOpacity(.7);
@@ -339,6 +343,8 @@ class Planet extends Body {
       center: { x: this.world.W / 2, y: this.world.H / 2 }, // planet is in the center
       radius: Random.prop2(BODY.PLANET.RADIUS, this.world.H),
       colorSpectrum: color.makeSpectrum(toColor, 5), // TODO: use random predefined count
+      offsetRadiusMax: 40,
+      offsetSpeed: 0.1,
     };
     Random.insertRandom(this.prop.colorSpectrum, new Color());
   }
@@ -371,7 +377,9 @@ class Star extends Body {
         y: Random.int(0, this.world.H),
       }, // planet is in the center
       radius: Random.prop2(BODY.STAR.RADIUS, this.world.H),
-      color: new Color()
+      color: new Color(),
+      offsetRadiusMax: 40,
+      offsetSpeed: 0.1,
     };
   }
 
@@ -393,6 +401,105 @@ class Star extends Body {
     );
     this.ctx.fillStyle = color.toString();
     this.ctx.fill();
+  }
+}
+
+// SHIP ---------------------------------------------------------------------------------------------
+
+class Ship extends Body {
+  constructor(world, layer, id) {
+    super(world, layer, id);
+  }
+
+  setup() {
+    this.prop = {
+      center: { x: this.world.W/6, y: this.world.H / 2 }, // planet is in the center
+      offsetRadiusMax: 80,
+      offsetSpeed: 0.3,
+    };
+  }
+
+  move(angle, strength) {
+    this.moveBody(angle, strength);
+  }
+
+  draw() {
+    this.drawExhaust();
+    this.drawShip();
+  }
+
+  drawExhaust() {
+    const { pos } = this.state;
+    const lineLenX = 280;
+    const grd = this.ctx.createLinearGradient(0, 0, 0, this.world.H);
+    grd.addColorStop(0, '#F00c');
+    grd.addColorStop(0.5, '#F008');
+    grd.addColorStop(1, '#F00c');
+    this.ctx.beginPath();
+    this.ctx.moveTo(pos.x, pos.y - 5);
+    this.ctx.lineTo(pos.x + lineLenX, pos.y - 5);
+    this.ctx.quadraticCurveTo(this.world.W, pos.y - 5, this.world.W, 0);
+    this.ctx.lineTo(this.world.W, this.world.H);
+    this.ctx.quadraticCurveTo(this.world.W, pos.y + 5, pos.x + lineLenX, pos.y + 5);
+    this.ctx.lineTo(pos.x, pos.y + 5);
+    this.ctx.fillStyle = grd;
+    this.ctx.fill();
+  }
+
+  drawShip() {
+    const { x, y } = this.state.pos;
+    // exhaust port
+    this.ctx.beginPath();
+    this.ctx.moveTo(x+35, y-10);
+    this.ctx.lineTo(x+45, y-5);
+    this.ctx.lineTo(x+45, y+5);
+    this.ctx.lineTo(x+35, y+10);
+    this.ctx.fillStyle = "#555";
+    this.ctx.fill();
+
+    // body
+    this.ctx.beginPath();
+    this.ctx.moveTo(x+35, y-10);
+    this.ctx.quadraticCurveTo(x+20, y-30, x-50, y);
+    this.ctx.quadraticCurveTo(x+20, y+30, x+35, y+10);
+    this.ctx.fillStyle = "#EEE";
+    this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.moveTo(x-50, y);
+    this.ctx.quadraticCurveTo(x+20, y+30, x+35, y+10);
+    this.ctx.lineTo(x+35, y-10);
+    this.ctx.quadraticCurveTo(x+20, y+24, x-50, y);
+    this.ctx.fillStyle = "#0004";
+    this.ctx.fill();
+
+    // 3 windows
+    for (let i = 0; i < 3; ++i) {
+      this.ctx.beginPath();
+      this.ctx.arc(x - 18 + i * 14, y, 4, 0, 2 * Math.PI, false);
+      this.ctx.fillStyle = '#222';
+      this.ctx.fill();
+    }
+
+    // fins
+    this.ctx.beginPath();
+    this.ctx.moveTo(x+6, y-14);
+    this.ctx.lineTo(x+30, y-28);
+    this.ctx.lineTo(x+72, y-30);
+    this.ctx.lineTo(x+34, y-22);
+    this.ctx.lineTo(x+26, y-10);
+    this.ctx.quadraticCurveTo(x+18, y-14, x+6, y-14);
+    this.ctx.fillStyle = "#777";
+    this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.moveTo(x+6, y+14);
+    this.ctx.lineTo(x+30, y+28);
+    this.ctx.lineTo(x+72, y+30);
+    this.ctx.lineTo(x+34, y+22);
+    this.ctx.lineTo(x+26, y+10);
+    this.ctx.quadraticCurveTo(x+18, y+14, x+6, y+14);
+    this.ctx.fillStyle = "#777";
+    this.ctx.fill();
+
   }
 }
 

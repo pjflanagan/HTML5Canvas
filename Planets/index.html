@@ -6,6 +6,24 @@
     <script src="helpers.js"></script>
     <script src="world.js"></script>
     <style>
+      @font-face {
+        font-family: AmericanCaptain;
+        src: url(AmericanCaptain-MdEY.otf);
+      }
+
+      .name {
+        font-family: AmericanCaptain;
+        color: #FFF;
+        text-align: center;
+        font-size: 80px;
+        position: fixed;
+        z-index: 10;
+        width: 100%;
+        top: 50%;
+        height: 80px;
+        margin-top: -40px;
+      }
+
       body {
         /*overflow:hidden;*/
         width: 100%;
@@ -27,6 +45,7 @@
     </style>
   </head>
   <body>
+    <div class="name">PETER JAMES FLANAGAN</div>
     <canvas id="pix"></canvas>
   </body>
 </html>
