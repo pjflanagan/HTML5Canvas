@@ -92,6 +92,7 @@ class World {
   }
 
   animate() {
+    // for(let i = 0; i < 10; ++i)
     this.drawFrame();
     this.animationReq = window.requestAnimationFrame(this.animate.bind(this));
   }
@@ -124,10 +125,10 @@ const BODY = {
     RADIUS: { min: 0.0008, max: 0.002 },
   },
   MOON: {
-    RADIUS: { min: 0.01, max: 0.06 },
+    RADIUS: { min: 0.04, max: 0.08 }, // 0.01 0.06
   },
   PLANET: {
-    RADIUS: { min: 0.2, max: 0.3 }, // proportional to world
+    RADIUS: { min: 0.36, max: 0.42 }, // proportional to world 0.2, 0.3
   },
 };
 
@@ -147,8 +148,10 @@ class Body {
     this.setupColors();
     this.state.pos = {
       x: this.prop.center.x,
-      y: this.prop.center.y
-    }
+      y: this.prop.center.y,
+    };
+    this.state.offset = {x: 0, y: 0};
+    this.setOffsetTo();
 
   }
 
@@ -168,6 +171,21 @@ class Body {
     };
   }
 
+  setOffsetTo() {
+    const angle = Random.dec(-Math.PI, Math.PI)
+    const radius = Random.dec(0, 40);
+    this.state.offset.to = {
+      x: radius * Math.cos(angle),
+      y: radius * Math.sin(angle),
+    };
+  }
+
+  reachedOffset() {
+    const { offset } = this.state;
+    const dist = distance(offset, offset.to);
+    return dist < 4;
+  }
+
   moveBody(angle, strength) {
     // move towards the new wiggle point
     // if we are there then select a new wiggle point
@@ -177,8 +195,21 @@ class Body {
       y: center.y + this.layerStrength * strength * Math.sin(angle),
     };
 
-    // TODO: for now just use shiftedCenter but I want them to bob
-    this.state.pos = shiftedCenter;
+    // move to a point at a random and angle from center
+    if (this.reachedOffset()) {
+      this.setOffsetTo();
+    }
+
+    // calculate the delta x and y for the new
+    const { x, y, to } = this.state.offset;
+    const offsetAngle = Math.atan2(to.y - y, to.x - x);
+    this.state.offset.x = x + 0.1 * Math.cos(offsetAngle);
+    this.state.offset.y = y + 0.1 * Math.sin(offsetAngle);
+
+    this.state.pos = {
+      x: shiftedCenter.x + this.state.offset.x,
+      y: shiftedCenter.y + this.state.offset.y
+    };
   }
 
   moveColors() {
@@ -214,7 +245,7 @@ class Body {
         2 * Math.PI,
         false
       );
-      this.ctx.fillStyle = colorSpectrum[i].toString();
+      this.ctx.fillStyle = colorSpectrum[i].toString(); //A(1-(.05*i));
       this.ctx.fill();
     }
 
@@ -244,7 +275,7 @@ class Body {
     grd.addColorStop(.75, colorSpectrum[0].toStringA(0));
     grd.addColorStop(1, colorSpectrum[0].toStringA(.08));
     this.ctx.beginPath();
-    this.ctx.rect(x, y-radius, this.world.W, 2 * radius);
+    this.ctx.rect(x, y-radius, this.world.W * 2, 2 * radius);
     this.ctx.fillStyle = grd;
     this.ctx.fill();
   }
@@ -259,10 +290,10 @@ class Moon extends Body {
 
   setup() {
     const color = new Color(); // random color
-    color.setOpacity(1);
+    color.setOpacity(0.9);
     // const toColor = color.randomSimilar(64);
     const toColor = new Color(); // random color
-    toColor.setOpacity(1);
+    toColor.setOpacity(0.9);
 
     // unchanging props
     const radius = Random.prop2(BODY.MOON.RADIUS, this.world.H);
@@ -270,11 +301,13 @@ class Moon extends Body {
       center: {
         x: Random.int(radius * 2, this.world.W - radius * 2),
         y: Random.int(0, this.world.H),
-      }, // planet is in the center
+      },
       radius,
       colorSpectrum: color.makeSpectrum(toColor, 3), // TODO: use random predefined count
     };
-    Random.insertRandom(this.prop.colorSpectrum, new Color());
+    const randomStripeColor = new Color();
+    randomStripeColor.setOpacity(.7);
+    Random.insertRandom(this.prop.colorSpectrum, randomStripeColor);
   }
 
   move(angle, strength) {
@@ -297,9 +330,9 @@ class Planet extends Body {
 
   setup() {
     const color = new Color(); // random color TODO: use a pallet
-    color.setOpacity(1);
+    color.setOpacity(0.9);
     const toColor = new Color();
-    toColor.setOpacity(1);
+    toColor.setOpacity(0.9);
 
     // unchanging props
     this.prop = {
