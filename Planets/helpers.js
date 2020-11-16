@@ -1,7 +1,5 @@
 
-// GLOBAL ------------------------------------------------------------------------------------------
-
-// random
+// RANDOM --------------------------------------------------------------------------------------------
 
 const Random = {
   int: (min, max) => Math.round(Math.random() * (max - min)) + min,
@@ -32,7 +30,7 @@ Random.insertRandom = (array, value) => {
   array.splice(Random.int(0,array.length), 0, value);
 }
 
-// color
+// COLOR --------------------------------------------------------------------------------------------
 
 class Color {
   constructor(color) {
@@ -69,6 +67,7 @@ class Color {
 
   setOpacity(a) {
     this.a = a;
+    return this;
   }
 
   toString() {
@@ -110,8 +109,33 @@ class Color {
   }
 }
 
-// math
+// MATH --------------------------------------------------------------------------------------------
 
-function distance(a, b) {
-  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+
+const distance = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+
+
+// TODO: use these
+class LinearFormula {
+  constructor(min, max) {
+    this.m = (max.y - min.y) / (max.x - min.x);
+    this.b = min.y - (slope * min.x);
+  }
+
+  calc(x) {
+    return this.m * x + this.b;
+  }
 }
+
+class QuadraticFormula {
+  constructor(point, vertex) {
+    this.vertex = vertex;
+    this.a = point.y - vertex.y / Math.pow(point.x-vertex.x, 2)
+  }
+
+  calc(x) {
+    const { a, vertex } = this;
+    return a * Math.pow((x-vertex.x), 2) + vertex.y;
+  }
+}
+
