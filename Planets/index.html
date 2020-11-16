@@ -4,32 +4,46 @@
     <title>Planets</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script src="helpers.js"></script>
-    <script src="world.js"></script>
+    <script src="canvas.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <style>
-      @font-face {
-        font-family: AmericanCaptain;
-        src: url(AmericanCaptain-MdEY.otf);
-      }
-
-      .name {
-        font-family: AmericanCaptain;
-        color: #FFF;
-        text-align: center;
-        font-size: 80px;
-        position: fixed;
-        z-index: 10;
-        width: 100%;
-        top: 50%;
-        height: 80px;
-        margin-top: -40px;
+      #gap {
+        height: 400%;
+        z-index: 2;
+        position: relative;
       }
     </style>
   </head>
   <body>
-    <!-- <div class="name">PETER JAMES FLANAGAN</div> -->
     <canvas id="pix"></canvas>
     <div id="gap"></div>
-    <div id="content"></div>
+    <script>
+      // MAIN ---------------------------------------------------------------------------------------------
+
+      window.onload = function () {
+        new Canvas();
+      };
+
+      // TODO: move onload stuff to setup function and change on resize
+      // screen goes black and then resets when resize is over
+
+      // TODO: this goes in the site that will actually display this
+
+      // G.SCROLL_END_Y = $("#content").offset().top;
+      // G.SCROLL_START_Y = G.SCROLL_END_Y - H; // TODO: use these in animation ratios?
+
+      // $("#pix").click(function() {
+      //   $('body').animate({
+      //       scrollTop: $("#content").offset().top
+      //   }, 1200);
+      // });
+
+      // move the space
+      // if(scroll > G.SCROLL_START_Y) {
+      //   $('#pix').css({top: - 0.25 * (scroll - G.SCROLL_START_Y)});
+      // } else {
+      //   $('#pix').css({top: 0});
+      // }
+    </script>
   </body>
 </html>

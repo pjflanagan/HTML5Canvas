@@ -1,31 +1,38 @@
-// WORLD -------------------------------------------------------------------------------------------
+// CANVAS -------------------------------------------------------------------------------------------
 
-const WORLD = {
-  STARS: { min: 64, max: 140 },
-  BACKGROUND_MOONS: { min: 2, max: 7 },
-  FOREGROUND_MOONS: { min: 3, max: 5 }
-};
-
-// bodies:
-// background stars
-// background moons
-// planet (with rings)
-// foreground moons
-
-class World {
-  constructor(ctx, width, height) {
-    this.ctx = ctx;
+class Canvas {
+  constructor() { // TODO: make this take some page props like scrollLength
+    const canvas = document.getElementById("pix");
+    this.ctx = canvas.getContext("2d");
 
     // properties
-    this.W = width;
-    this.H = height;
-    this.shorterSide = Math.min(width, height);
-    this.diagonal = distance({ x: 0, y: 0 }, { x: width, y: height });
+    this.W = window.innerWidth,
+    this.H = window.innerHeight;
+    canvas.width = this.W;
+    canvas.height = this.H;
+    this.shorterSide = Math.min(this.W, this.H);
+    this.diagonal = distance({ x: 0, y: 0 }, { x: this.W, y: this.H });
 
     // user position
     this.angle = 0;
     this.strength = 0;
     this.scrollPercent = 0;
+
+    // user input
+    this.onMouseMove = this.onMouseMove.bind(this);
+    $(document).mousemove((e) => {
+      const mouse = {
+        x: e.pageX,
+        y: e.pageY,
+      };
+      this.onMouseMove(mouse);
+    });
+    
+    this.onScroll = this.onScroll.bind(this);
+    $(document).scroll(() => {
+      const scroll = $(window).scrollTop();
+      this.onScroll(scroll);
+    });
 
     // setup and animate
     this.setup();
@@ -35,24 +42,25 @@ class World {
 
   setup() {
     // add things to bodies in order from bottom to top
+    this.space = new Space(this);
     this.bodies = [];
 
-    const starCount = Random.prop(WORLD.STARS);
+    const starCount = Random.prop(SPACE.STARS);
     for (let i = 0; i < starCount; ++i) {
       this.bodies.push(new Star(this, 0, i));
     }
 
-    const starCount2 = Random.prop(WORLD.STARS);
+    const starCount2 = Random.prop(SPACE.STARS);
     for (let i = 0; i < starCount2; ++i) {
       this.bodies.push(new Star(this, 1, i));
     }
 
-    const bgMoonCount = Random.prop(WORLD.BACKGROUND_MOONS);
+    const bgMoonCount = Random.prop(SPACE.BACKGROUND_MOONS);
     for (let i = 0; i < bgMoonCount; ++i) {
       this.bodies.push(new Moon(this, 2, i));
     }
 
-    const bgMoonCount2 = Random.prop(WORLD.BACKGROUND_MOONS);
+    const bgMoonCount2 = Random.prop(SPACE.BACKGROUND_MOONS);
     for (let i = 0; i < bgMoonCount2; ++i) {
       this.bodies.push(new Moon(this, 3, i));
     }
@@ -60,33 +68,24 @@ class World {
     this.bodies.push(new Planet(this, 4, 0));
     this.bodies.push(new Ship(this, 5, 0)); // TODO: SET LAYERS AS NAMES SHIP_LAYER
 
-    const fgMoonCount = Random.prop(WORLD.FOREGROUND_MOONS);
+    const fgMoonCount = Random.prop(SPACE.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount; ++i) {
       this.bodies.push(new Moon(this, 6, i));
     }
 
-    const fgMoonCount2 = Random.prop(WORLD.FOREGROUND_MOONS);
+    const fgMoonCount2 = Random.prop(SPACE.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount2; ++i) {
       this.bodies.push(new Moon(this, 7, i));
     }
 
-    const starCount3 = Random.prop(WORLD.STARS);
+    const starCount3 = Random.prop(SPACE.STARS);
     for (let i = 0; i < starCount3; ++i) {
       this.bodies.push(new Star(this, 8, i));
     }
   }
 
-  drawBackground() {
-    this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.W, this.H);
-    this.ctx.fillStyle = "#1c1c1c"; // "#faead0";
-    this.ctx.fill();
-
-    // TODO: more interesting stuff here as well
-  }
-
   drawFrame() {
-    this.drawBackground();
+    this.space.drawBackground(); // TODO: space can be considered a body
     this.bodies.forEach((body) => {
       body.move();
       body.draw();
@@ -94,7 +93,7 @@ class World {
   }
 
   start() {
-    if(!this.isRunning) {
+    if (!this.isRunning) {
       this.isRunning = true;
       this.animate();
     }
@@ -125,6 +124,31 @@ class World {
   onScroll(scroll) {
     this.scrollPercent = Math.min(scroll / (this.H * 3), 1);
   }
+
+}
+
+// SPACE -------------------------------------------------------------------------------------------
+
+const SPACE = {
+  STARS: { min: 64, max: 140 },
+  BACKGROUND_MOONS: { min: 2, max: 7 },
+  FOREGROUND_MOONS: { min: 3, max: 5 },
+};
+
+class Space {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.ctx;
+  }
+
+  drawBackground() {
+    this.ctx.beginPath();
+    this.ctx.rect(0, 0, this.canvas.W, this.canvas.H);
+    this.ctx.fillStyle = "#1c1c1c"; // "#faead0";
+    this.ctx.fill();
+
+    // TODO: more interesting stuff here as well
+  }
 }
 
 // BODIES ---------------------------------------------------------------------------------------------
@@ -133,22 +157,22 @@ const BODY = {
   COLOR: {
     ANGULAR_VELOCITY: { min: 0.001, max: 0.003 },
     RESIZE_FREQUENCY: { min: 0.1, max: 0.3 },
-    DISTANCE_FROM_CENTER: { min: 1/4, max: 1/3 },
+    DISTANCE_FROM_CENTER: { min: 1 / 4, max: 1 / 3 },
     OVERLAY_OPACITY_INSIDE: 0.2,
-    OVERLAY_OPACITY_OUTSIDE: 0.8
+    OVERLAY_OPACITY_OUTSIDE: 0.8,
   },
   TRAIL: {
     OPACITY_OUTSIDE: 0.08,
     OPACITY_INSIDE: 0.01,
-    COLOR_STOP: .25
-  }
-}
+    COLOR_STOP: 0.25,
+  },
+};
 
 class Body {
-  constructor(world, layer, id) {
+  constructor(canvas, layer, id) {
     // general info
-    this.world = world;
-    this.ctx = this.world.ctx;
+    this.canvas = canvas;
+    this.ctx = this.canvas.ctx;
     this.id = `${layer}-${id}`;
     this.layer = layer;
 
@@ -176,7 +200,10 @@ class Body {
     // color is relative to the actual center
     this.state.colorPos = {
       angle: Random.dec(-Math.PI, Math.PI),
-      distanceFromCenter: Random.prop2(BODY.COLOR.DISTANCE_FROM_CENTER, this.prop.radius),
+      distanceFromCenter: Random.prop2(
+        BODY.COLOR.DISTANCE_FROM_CENTER,
+        this.prop.radius
+      ),
     };
   }
 
@@ -196,7 +223,7 @@ class Body {
   }
 
   getMouseShiftedCenter() {
-    const { angle, strength } = this.world;
+    const { angle, strength } = this.canvas;
     const { center, layerStrength } = this.prop;
     return {
       x: center.x + layerStrength * strength * Math.cos(angle),
@@ -228,12 +255,15 @@ class Body {
     const { colorProp, radius } = this.prop;
     this.state.colorPos.angle =
       this.state.colorPos.angle + colorProp.angularVelocity;
-    const oscillationAngle = Math.PI * colorProp.resizeFrequency * this.state.colorPos.angle;
+    const oscillationAngle =
+      Math.PI * colorProp.resizeFrequency * this.state.colorPos.angle;
     const oscillation = 0.5 * Math.sin(oscillationAngle) + 1;
     const min = radius * BODY.COLOR.DISTANCE_FROM_CENTER.min;
     const max = radius * BODY.COLOR.DISTANCE_FROM_CENTER.max;
     this.state.colorPos.smallRadius = min + oscillation * max;
-    this.state.colorPos.distanceFromCenter = radius * (1-BODY.COLOR.DISTANCE_FROM_CENTER.min) - this.state.colorPos.smallRadius;
+    this.state.colorPos.distanceFromCenter =
+      radius * (1 - BODY.COLOR.DISTANCE_FROM_CENTER.min) -
+      this.state.colorPos.smallRadius;
   }
 
   drawSpectrum() {
@@ -268,8 +298,18 @@ class Body {
       pos.y - colorDelta.y,
       radius
     );
-    grd.addColorStop(0, colorSpectrum[colorSpectrum.length - 1].toStringA(BODY.COLOR.OVERLAY_OPACITY_INSIDE));
-    grd.addColorStop(1, colorSpectrum[colorSpectrum.length - 1].toStringA(BODY.COLOR.OVERLAY_OPACITY_OUTSIDE));
+    grd.addColorStop(
+      0,
+      colorSpectrum[colorSpectrum.length - 1].toStringA(
+        BODY.COLOR.OVERLAY_OPACITY_INSIDE
+      )
+    );
+    grd.addColorStop(
+      1,
+      colorSpectrum[colorSpectrum.length - 1].toStringA(
+        BODY.COLOR.OVERLAY_OPACITY_OUTSIDE
+      )
+    );
     this.ctx.beginPath();
     this.ctx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI, false);
     this.ctx.fillStyle = grd;
@@ -281,11 +321,17 @@ class Body {
     const { x, y } = this.state.pos;
     const grd = this.ctx.createLinearGradient(x, y - radius, x, y + radius);
     grd.addColorStop(0, colorSpectrum[0].toStringA(BODY.TRAIL.OPACITY_OUTSIDE));
-    grd.addColorStop(BODY.TRAIL.COLOR_STOP, colorSpectrum[0].toStringA(BODY.TRAIL.OPACITY_INSIDE));
-    grd.addColorStop(1-BODY.TRAIL.COLOR_STOP, colorSpectrum[0].toStringA(BODY.TRAIL.OPACITY_INSIDE));
+    grd.addColorStop(
+      BODY.TRAIL.COLOR_STOP,
+      colorSpectrum[0].toStringA(BODY.TRAIL.OPACITY_INSIDE)
+    );
+    grd.addColorStop(
+      1 - BODY.TRAIL.COLOR_STOP,
+      colorSpectrum[0].toStringA(BODY.TRAIL.OPACITY_INSIDE)
+    );
     grd.addColorStop(1, colorSpectrum[0].toStringA(BODY.TRAIL.OPACITY_OUTSIDE));
     this.ctx.beginPath();
-    this.ctx.rect(x, y - radius, this.world.W * 2, 2 * radius);
+    this.ctx.rect(x, y - radius, this.canvas.W * 2, 2 * radius);
     this.ctx.fillStyle = grd;
     this.ctx.fill();
   }
@@ -303,8 +349,8 @@ const MOON = {
 };
 
 class Moon extends Body {
-  constructor(world, layer, id) {
-    super(world, layer, id);
+  constructor(space, layer, id) {
+    super(space, layer, id);
   }
 
   setup() {
@@ -312,12 +358,13 @@ class Moon extends Body {
     const toColor = new Color().setOpacity(0.9);
 
     // unchanging props
-    const radius = Random.prop2(MOON.RADIUS, this.world.shorterSide);
-    const minX = (this.layer > 5) ? SHIP.CENTER.x * this.world.H + radius * 2 : radius * 2
+    const radius = Random.prop2(MOON.RADIUS, this.canvas.shorterSide);
+    const minX =
+      this.layer > 5 ? SHIP.CENTER.x * this.canvas.H + radius * 2 : radius * 2;
     this.prop = {
       center: {
-        x: Random.int(minX, this.world.W - radius * 2),
-        y: Random.int(0, this.world.H), // TODO: make sure this isn't near the space ship or behind the planet too much
+        x: Random.int(minX, this.canvas.W - radius * 2),
+        y: Random.int(0, this.canvas.H), // TODO: make sure this isn't near the space ship or behind the planet too much
       },
       radius,
       colorSpectrum: color.makeSpectrum(toColor, MOON.COLORS),
@@ -344,7 +391,7 @@ class Moon extends Body {
 // PLANET ---------------------------------------------------------------------------------------------
 
 const PLANET = {
-  RADIUS: { min: 0.36, max: 0.42 }, // proportional to world 0.2, 0.3
+  RADIUS: { min: 0.36, max: 0.42 }, // proportional to space 0.2, 0.3
   COLORS: 5,
   OFFSET: {
     SPEED: 0.1,
@@ -353,8 +400,8 @@ const PLANET = {
 };
 
 class Planet extends Body {
-  constructor(world, layer, id) {
-    super(world, layer, id);
+  constructor(space, layer, id) {
+    super(space, layer, id);
   }
 
   setup() {
@@ -363,8 +410,8 @@ class Planet extends Body {
 
     // unchanging props
     this.prop = {
-      center: { x: this.world.W / 2, y: this.world.H / 2 }, // planet is in the center
-      radius: Random.prop2(PLANET.RADIUS, this.world.H),
+      center: { x: this.canvas.W / 2, y: this.canvas.H / 2 }, // planet is in the center
+      radius: Random.prop2(PLANET.RADIUS, this.canvas.H),
       colorSpectrum: color.makeSpectrum(toColor, PLANET.COLORS), // TODO: use random predefined count
       offsetRadiusMax: PLANET.OFFSET.MAX_RADIUS,
       offsetSpeed: PLANET.OFFSET.SPEED,
@@ -409,18 +456,18 @@ const STAR = {
 };
 
 class Star extends Body {
-  constructor(world, layer, id) {
-    super(world, layer, id);
+  constructor(space, layer, id) {
+    super(space, layer, id);
   }
 
   setup() {
     // unchanging props
     this.prop = {
       center: {
-        x: Random.int(0, this.world.W),
-        y: Random.int(0, this.world.H),
+        x: Random.int(0, this.canvas.W),
+        y: Random.int(0, this.canvas.H),
       }, // planet is in the center
-      radius: Random.prop2(STAR.RADIUS, this.world.H),
+      radius: Random.prop2(STAR.RADIUS, this.canvas.H),
       color: new Color(),
       offsetRadiusMax: STAR.OFFSET.MAX_RADIUS,
       offsetSpeed: STAR.OFFSET.SPEED,
@@ -446,7 +493,7 @@ class Star extends Body {
 
 const SHIP = {
   CENTER: {
-    x: 1 / 6, // proportional to world
+    x: 1 / 6, // proportional to space
     y: 0.5,
   },
   OFFSET: {
@@ -465,15 +512,15 @@ const SHIP = {
 };
 
 class Ship extends Body {
-  constructor(world, layer, id) {
-    super(world, layer, id);
+  constructor(space, layer, id) {
+    super(space, layer, id);
   }
 
   setup() {
     this.prop = {
       center: {
-        x: this.world.W * SHIP.CENTER.x,
-        y: this.world.H * SHIP.CENTER.y,
+        x: this.canvas.W * SHIP.CENTER.x,
+        y: this.canvas.H * SHIP.CENTER.y,
       }, // planet is in the center
       offsetRadiusMax: SHIP.OFFSET.MAX_RADIUS,
       offsetSpeed: SHIP.OFFSET.SPEED,
@@ -482,7 +529,7 @@ class Ship extends Body {
 
   move() {
     const mouseShift = this.getMouseShiftedCenter();
-    const scrollShift = this.getScrollShiftedCenter()
+    const scrollShift = this.getScrollShiftedCenter();
     this.moveBody({
       x: mouseShift.x + scrollShift.x,
       y: mouseShift.y + scrollShift.y,
@@ -490,11 +537,11 @@ class Ship extends Body {
   }
 
   getScrollShiftedCenter() {
-    const { scrollPercent, W } = this.world;
+    const { scrollPercent, W } = this.canvas;
     return {
-      x: Math.pow(scrollPercent - 0.25, 2) * - SHIP.CENTER.x * W * 3,
-      y: scrollPercent * -200
-    }
+      x: Math.pow(scrollPercent - 0.25, 2) * -SHIP.CENTER.x * W * 3,
+      y: scrollPercent * -200,
+    };
   }
 
   draw() {
@@ -504,7 +551,7 @@ class Ship extends Body {
 
   drawExhaust() {
     const { pos } = this.state;
-    const { scrollPercent, W, H } = this.world;
+    const { scrollPercent, W, H } = this.canvas;
 
     const lineLenX = -280 * (scrollPercent - 0.25) + 280; // 280
     const inverseLenX = 2 * (280 - lineLenX);
@@ -590,54 +637,4 @@ class Ship extends Body {
   }
 }
 
-// MAIN ---------------------------------------------------------------------------------------------
 
-const G = {};
-
-window.onload = function () {
-  const canvas = document.getElementById("pix");
-  const ctx = canvas.getContext("2d");
-
-  const W = window.innerWidth,
-    H = window.innerHeight;
-  canvas.width = W;
-  canvas.height = H;
-
-  G.world = new World(ctx, W, H);
-};
-
-// TODO: move onload stuff to setup function and change on resize
-// screen goes black and then resets when resize is over
-
-$(document).mousemove((e) => {
-  const mouse = {
-    x: e.pageX,
-    y: e.pageY,
-  };
-  G.world.onMouseMove(mouse);
-});
-
-$(document).scroll(() => {
-  const scroll = $(window).scrollTop();
-  // animate the world
-  G.world.onScroll(scroll);
-});
-
-
-// TODO: this goes in the site that will actually display this
-
-// G.SCROLL_END_Y = $("#content").offset().top;
-// G.SCROLL_START_Y = G.SCROLL_END_Y - H; // TODO: use these in animation ratios?
-
-// $("#pix").click(function() {
-//   $('body').animate({
-//       scrollTop: $("#content").offset().top
-//   }, 1200);
-// });
-
-// move the world
-// if(scroll > G.SCROLL_START_Y) {
-//   $('#pix').css({top: - 0.25 * (scroll - G.SCROLL_START_Y)});
-// } else {
-//   $('#pix').css({top: 0});
-// }
