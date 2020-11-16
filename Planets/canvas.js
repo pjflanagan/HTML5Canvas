@@ -1,5 +1,12 @@
 // CANVAS -------------------------------------------------------------------------------------------
 
+const CANVAS = {
+  STARS: { min: 84, max: 164 },
+  BACKGROUND_MOONS: { min: 2, max: 7 },
+  FOREGROUND_MOONS: { min: 3, max: 5 },
+};
+
+
 class Canvas {
   constructor() { // TODO: make this take some page props like scrollLength
     const canvas = document.getElementById("pix");
@@ -45,22 +52,22 @@ class Canvas {
     this.space = new Space(this);
     this.bodies = [];
 
-    const starCount = Random.prop(SPACE.STARS);
+    const starCount = Random.prop(CANVAS.STARS);
     for (let i = 0; i < starCount; ++i) {
       this.bodies.push(new Star(this, 0, i));
     }
 
-    const starCount2 = Random.prop(SPACE.STARS);
+    const starCount2 = Random.prop(CANVAS.STARS);
     for (let i = 0; i < starCount2; ++i) {
       this.bodies.push(new Star(this, 1, i));
     }
 
-    const bgMoonCount = Random.prop(SPACE.BACKGROUND_MOONS);
+    const bgMoonCount = Random.prop(CANVAS.BACKGROUND_MOONS);
     for (let i = 0; i < bgMoonCount; ++i) {
       this.bodies.push(new Moon(this, 2, i));
     }
 
-    const bgMoonCount2 = Random.prop(SPACE.BACKGROUND_MOONS);
+    const bgMoonCount2 = Random.prop(CANVAS.BACKGROUND_MOONS);
     for (let i = 0; i < bgMoonCount2; ++i) {
       this.bodies.push(new Moon(this, 3, i));
     }
@@ -68,17 +75,17 @@ class Canvas {
     this.bodies.push(new Planet(this, 4, 0));
     this.bodies.push(new Ship(this, 5, 0)); // TODO: SET LAYERS AS NAMES SHIP_LAYER
 
-    const fgMoonCount = Random.prop(SPACE.FOREGROUND_MOONS);
+    const fgMoonCount = Random.prop(CANVAS.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount; ++i) {
       this.bodies.push(new Moon(this, 6, i));
     }
 
-    const fgMoonCount2 = Random.prop(SPACE.FOREGROUND_MOONS);
+    const fgMoonCount2 = Random.prop(CANVAS.FOREGROUND_MOONS);
     for (let i = 0; i < fgMoonCount2; ++i) {
       this.bodies.push(new Moon(this, 7, i));
     }
 
-    const starCount3 = Random.prop(SPACE.STARS);
+    const starCount3 = Random.prop(CANVAS.STARS);
     for (let i = 0; i < starCount3; ++i) {
       this.bodies.push(new Star(this, 8, i));
     }
@@ -127,13 +134,7 @@ class Canvas {
 
 }
 
-// SPACE -------------------------------------------------------------------------------------------
-
-const SPACE = {
-  STARS: { min: 64, max: 140 },
-  BACKGROUND_MOONS: { min: 2, max: 7 },
-  FOREGROUND_MOONS: { min: 3, max: 5 },
-};
+// CANVAS -------------------------------------------------------------------------------------------
 
 class Space {
   constructor(canvas) {
@@ -440,6 +441,10 @@ const MOON = {
     SPEED: 0.1,
     MAX_RADIUS: 40,
   },
+  CENTER: {
+    x: { min: -0.25, max: 1 },
+    y: { min: 0.001, max: 0.999 }
+  },
   SCROLL_SHIFT_RATE: 14
 };
 
@@ -449,17 +454,18 @@ class Moon extends Body {
   }
 
   setup() {
+    const { shorterSide, W, H } = this.canvas;
     const color = new Color().setOpacity(0.9);
     const toColor = new Color().setOpacity(0.9);
 
     // unchanging props
-    const radius = Random.prop2(MOON.RADIUS, this.canvas.shorterSide);
+    const radius = Random.prop2(MOON.RADIUS, shorterSide);
     const minX =
-      this.layer > 5 ? SHIP.CENTER.x * this.canvas.H + radius * 2 : radius * 2;
+      (this.layer > 5) ? SHIP.CENTER.x * this.canvas.H + radius * 2 : MOON.CENTER.x.min * W;
     this.prop = {
       center: {
-        x: Random.int(minX, this.canvas.W - radius * 2),
-        y: Random.int(0, this.canvas.H), // TODO: make sure this isn't near the space ship or behind the planet too much
+        x: Random.int(minX, W - radius * 2),
+        y: Random.int(0, H), // TODO: make sure this isn't near the space ship or behind the planet too much
       },
       radius,
       colorSpectrum: color.makeSpectrum(toColor, MOON.COLORS),
@@ -497,6 +503,10 @@ const STAR = {
     SPEED: 0.1,
     MAX_RADIUS: 20,
   },
+  CENTER: {
+    x: { min: -0.5, max: 1 },
+    y: { min: 0.001, max: 0.999 }
+  },
   SCROLL_SHIFT_RATE: 21
 };
 
@@ -509,8 +519,8 @@ class Star extends Body {
     // unchanging props
     this.prop = {
       center: {
-        x: Random.int(0, this.canvas.W),
-        y: Random.int(0, this.canvas.H),
+        x: Random.prop2(STAR.CENTER.x, this.canvas.W),
+        y: Random.prop2(STAR.CENTER.y, this.canvas.H),
       }, // planet is in the center
       radius: Random.prop2(STAR.RADIUS, this.canvas.H),
       color: new Color(),
