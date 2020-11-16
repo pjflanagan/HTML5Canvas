@@ -18,32 +18,10 @@
     <canvas id="pix"></canvas>
     <div id="gap"></div>
     <script>
-      // MAIN ---------------------------------------------------------------------------------------------
-
       window.onload = function () {
+        // canvas can be imported and used on other sites easily
         new Canvas();
       };
-
-      // TODO: move onload stuff to setup function and change on resize
-      // screen goes black and then resets when resize is over
-
-      // TODO: this goes in the site that will actually display this
-
-      // G.SCROLL_END_Y = $("#content").offset().top;
-      // G.SCROLL_START_Y = G.SCROLL_END_Y - H; // TODO: use these in animation ratios?
-
-      // $("#pix").click(function() {
-      //   $('body').animate({
-      //       scrollTop: $("#content").offset().top
-      //   }, 1200);
-      // });
-
-      // move the space
-      // if(scroll > G.SCROLL_START_Y) {
-      //   $('#pix').css({top: - 0.25 * (scroll - G.SCROLL_START_Y)});
-      // } else {
-      //   $('#pix').css({top: 0});
-      // }
     </script>
   </body>
 </html>

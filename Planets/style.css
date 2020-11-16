@@ -3,6 +3,7 @@ body {
   height: 100%;
   background: #1c1c1c;
   user-select: none;
+  overscroll-behavior: none;
 }
 
 * {

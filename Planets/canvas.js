@@ -22,8 +22,8 @@ class Canvas {
     this.onMouseMove = this.onMouseMove.bind(this);
     $(document).mousemove((e) => {
       const mouse = {
-        x: e.pageX,
-        y: e.pageY,
+        x: e.clientX,
+        y: e.clientY,
       };
       this.onMouseMove(mouse);
     });
@@ -429,17 +429,17 @@ class Planet extends Body {
 
   draw() {
     this.drawTrail();
-    // this.drawRing(-1);
+    this.drawRing(-1);
     this.drawSpectrum();
-    // this.drawRing(1);
+    this.drawRing(1);
   }
 
   drawRing(dir) {
     const { radius } = this.prop;
     const { x, y } = this.state.pos;
     this.ctx.beginPath();
-    this.ctx.moveTo(x + radius, y + radius);
-    this.ctx.quadraticCurveTo(x + radius + 10, y + radius + 10, x + 10, y);
+    this.ctx.ellipse(x, y, radius - 60, radius + 60, Math.PI / 4, Math.PI, Math.PI / 2)
+    // this.ctx.quadraticCurveTo(x + radius + 10, y + radius + 10, x + 10, y);
     this.ctx.strokeStyle = "#FFF";
     this.ctx.stroke();
   }
