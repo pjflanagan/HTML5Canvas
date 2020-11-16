@@ -231,6 +231,16 @@ class Body {
     };
   }
 
+  getScrollShiftedCenter() {
+    const { scrollPercent } = this.canvas;
+    const { layerStrength, scrollShiftRate } = this.prop;
+    const deltaPercent = scrollPercent - SHIP.BACKPEDAL;
+    return {
+      x: (deltaPercent > 0) ? deltaPercent * layerStrength * scrollShiftRate : 0,
+      y: 0
+    };
+  }
+
   // TODO: extrapolate this a litte, we will also be changing this with
   // the distance scrolled down the page
   moveBody(shift) {
@@ -346,6 +356,7 @@ const PLANET = {
     SPEED: 0.1,
     MAX_RADIUS: 40,
   },
+  SCROLL_SHIFT_RATE: 6
 };
 
 class Planet extends Body {
@@ -364,14 +375,19 @@ class Planet extends Body {
       colorSpectrum: color.makeSpectrum(toColor, PLANET.COLORS), // TODO: use random predefined count
       offsetRadiusMax: PLANET.OFFSET.MAX_RADIUS,
       offsetSpeed: PLANET.OFFSET.SPEED,
+      scrollShiftRate: PLANET.SCROLL_SHIFT_RATE
     };
     Random.insertRandom(this.prop.colorSpectrum, new Color());
     this.setupColors();
   }
 
   move() {
-    const shift = this.getMouseShiftedCenter();
-    this.moveBody(shift);
+    const mouseShift = this.getMouseShiftedCenter();
+    const scrollShift = this.getScrollShiftedCenter();
+    this.moveBody({
+      x: mouseShift.x + scrollShift.x,
+      y: mouseShift.y + scrollShift.y,
+    });
     this.moveColors();
     // TODO: this.moveRing
   }
@@ -424,6 +440,7 @@ const MOON = {
     SPEED: 0.1,
     MAX_RADIUS: 40,
   },
+  SCROLL_SHIFT_RATE: 14
 };
 
 class Moon extends Body {
@@ -448,6 +465,7 @@ class Moon extends Body {
       colorSpectrum: color.makeSpectrum(toColor, MOON.COLORS),
       offsetRadiusMax: MOON.OFFSET.MAX_RADIUS,
       offsetSpeed: MOON.OFFSET.SPEED,
+      scrollShiftRate: MOON.SCROLL_SHIFT_RATE
     };
     const randomStripeColor = new Color().setOpacity(0.7);
     Random.insertRandom(this.prop.colorSpectrum, randomStripeColor);
@@ -455,8 +473,12 @@ class Moon extends Body {
   }
 
   move() {
-    const shift = this.getMouseShiftedCenter();
-    this.moveBody(shift);
+    const mouseShift = this.getMouseShiftedCenter();
+    const scrollShift = this.getScrollShiftedCenter();
+    this.moveBody({
+      x: mouseShift.x + scrollShift.x,
+      y: mouseShift.y + scrollShift.y,
+    });
     this.moveColors();
   }
 
@@ -475,6 +497,7 @@ const STAR = {
     SPEED: 0.1,
     MAX_RADIUS: 20,
   },
+  SCROLL_SHIFT_RATE: 21
 };
 
 class Star extends Body {
@@ -493,12 +516,17 @@ class Star extends Body {
       color: new Color(),
       offsetRadiusMax: STAR.OFFSET.MAX_RADIUS,
       offsetSpeed: STAR.OFFSET.SPEED,
+      scrollShiftRate: STAR.SCROLL_SHIFT_RATE
     };
   }
 
   move() {
-    const shift = this.getMouseShiftedCenter();
-    this.moveBody(shift);
+    const mouseShift = this.getMouseShiftedCenter();
+    const scrollShift = this.getScrollShiftedCenter();
+    this.moveBody({
+      x: mouseShift.x + scrollShift.x,
+      y: mouseShift.y + scrollShift.y,
+    });
   }
 
   draw() {
@@ -559,18 +587,18 @@ class Ship extends Body {
 
   move() {
     const mouseShift = this.getMouseShiftedCenter();
-    const scrollShift = this.getScrollShiftedCenter();
+    const scrollShift = this.getShipScrollShiftedCenter();
     this.moveBody({
       x: mouseShift.x + scrollShift.x,
       y: mouseShift.y + scrollShift.y,
     });
   }
 
-  getScrollShiftedCenter() {
-    const { scrollPercent, W } = this.canvas;
+  getShipScrollShiftedCenter() {
+    const { scrollPercent, W, H } = this.canvas;
     return {
-      x: Math.pow(scrollPercent - 0.25, 2) * -SHIP.CENTER.x * W * 3,
-      y: scrollPercent * -200,
+      x: Math.pow(scrollPercent - SHIP.BACKPEDAL, 2) * -SHIP.CENTER.x * W * 4,
+      y: scrollPercent * -200, // Math.pow(scrollPercent - SHIP.BACKPEDAL, 2) * -SHIP.CENTER.y * H
     };
   }
 
