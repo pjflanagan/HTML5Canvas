@@ -337,6 +337,84 @@ class Body {
   }
 }
 
+// PLANET ---------------------------------------------------------------------------------------------
+
+const PLANET = {
+  RADIUS: { min: 0.36, max: 0.42 }, // proportional to space 0.2, 0.3
+  COLORS: 5,
+  OFFSET: {
+    SPEED: 0.1,
+    MAX_RADIUS: 40,
+  },
+};
+
+class Planet extends Body {
+  constructor(space, layer, id) {
+    super(space, layer, id);
+  }
+
+  setup() {
+    const color = new Color().setOpacity(0.9); // random color TODO: use a pallet
+    const toColor = new Color().setOpacity(0.9);
+
+    // unchanging props
+    this.prop = {
+      center: { x: this.canvas.W / 2, y: this.canvas.H / 2 }, // planet is in the center
+      radius: Random.prop2(PLANET.RADIUS, this.canvas.H),
+      colorSpectrum: color.makeSpectrum(toColor, PLANET.COLORS), // TODO: use random predefined count
+      offsetRadiusMax: PLANET.OFFSET.MAX_RADIUS,
+      offsetSpeed: PLANET.OFFSET.SPEED,
+    };
+    Random.insertRandom(this.prop.colorSpectrum, new Color());
+    this.setupColors();
+  }
+
+  move() {
+    const shift = this.getMouseShiftedCenter();
+    this.moveBody(shift);
+    this.moveColors();
+    // TODO: this.moveRing
+  }
+
+  draw() {
+    this.drawTrail();
+    this.drawSpectrum();
+    // this.drawRing();
+  }
+
+  drawRing() {
+    const { scrollPercent } = this.canvas;
+    const { radius } = this.prop;
+    const { x, y } = this.state.pos;
+    const angle = Math.PI * scrollPercent + Math.PI / 4;
+    const offset = {
+      x: radius/2 - 120*scrollPercent,
+      // dx: use a multiplier on the x diff to make them the same at 0 and further apart at the peaks
+      y: radius // Y is constant or it'll look weird
+    };
+    // TODO: we also need to move the x,y radius to pass over the planet
+    // we need to calculate the angle of intersection for each ring part
+    // https://www.analyzemath.com/EllipseProblems/ellipse_intersection.html
+    // but to fill this we will have to use some time of ellipseTo 
+    // https://stackoverflow.com/questions/14169234/the-relation-of-the-bezier-curve-and-ellipse
+    // to get it to flip to the other side we would have to switch either the angles or the anti-clockwise
+    // if x is less than zero and then reset x to be abs(x) before we draw
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, offset.x - 20, offset.y + 160, angle, Math.PI / 4, - Math.PI / 4)
+    this.ctx.strokeStyle = "#FFF";
+    this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, offset.x - 25, offset.y + 60, angle, Math.PI / 4, - Math.PI / 4)
+    this.ctx.strokeStyle = "#FFF";
+    this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, offset.x - 30, offset.y + 40, angle, Math.PI / 4, - Math.PI / 4)
+    this.ctx.strokeStyle = "#FFF";
+    this.ctx.stroke();
+
+  }
+}
+
 // MOON ---------------------------------------------------------------------------------------------
 
 const MOON = {
@@ -388,62 +466,6 @@ class Moon extends Body {
   }
 }
 
-// PLANET ---------------------------------------------------------------------------------------------
-
-const PLANET = {
-  RADIUS: { min: 0.36, max: 0.42 }, // proportional to space 0.2, 0.3
-  COLORS: 5,
-  OFFSET: {
-    SPEED: 0.1,
-    MAX_RADIUS: 40,
-  },
-};
-
-class Planet extends Body {
-  constructor(space, layer, id) {
-    super(space, layer, id);
-  }
-
-  setup() {
-    const color = new Color().setOpacity(0.9); // random color TODO: use a pallet
-    const toColor = new Color().setOpacity(0.9);
-
-    // unchanging props
-    this.prop = {
-      center: { x: this.canvas.W / 2, y: this.canvas.H / 2 }, // planet is in the center
-      radius: Random.prop2(PLANET.RADIUS, this.canvas.H),
-      colorSpectrum: color.makeSpectrum(toColor, PLANET.COLORS), // TODO: use random predefined count
-      offsetRadiusMax: PLANET.OFFSET.MAX_RADIUS,
-      offsetSpeed: PLANET.OFFSET.SPEED,
-    };
-    Random.insertRandom(this.prop.colorSpectrum, new Color());
-    this.setupColors();
-  }
-
-  move() {
-    const shift = this.getMouseShiftedCenter();
-    this.moveBody(shift);
-    this.moveColors();
-    // TODO: this.moveRing
-  }
-
-  draw() {
-    this.drawTrail();
-    // this.drawRing(-1);
-    this.drawSpectrum();
-    // this.drawRing(1);
-  }
-
-  drawRing(dir) {
-    const { radius } = this.prop;
-    const { x, y } = this.state.pos;
-    this.ctx.beginPath();
-    this.ctx.ellipse(x, y, radius - 60, radius + 60, Math.PI / 4, Math.PI, Math.PI / 2)
-    // this.ctx.quadraticCurveTo(x + radius + 10, y + radius + 10, x + 10, y);
-    this.ctx.strokeStyle = "#FFF";
-    this.ctx.stroke();
-  }
-}
 
 // STAR ---------------------------------------------------------------------------------------------
 
@@ -509,6 +531,7 @@ const SHIP = {
     BODY: "#EEE",
     SHADOW: "#0004",
   },
+  BACKPEDAL: 0.25 // proportion scroll percent
 };
 
 class Ship extends Body {
@@ -517,14 +540,21 @@ class Ship extends Body {
   }
 
   setup() {
+    const { W, H } = this.canvas;
     this.prop = {
       center: {
-        x: this.canvas.W * SHIP.CENTER.x,
-        y: this.canvas.H * SHIP.CENTER.y,
+        x: W * SHIP.CENTER.x,
+        y: H * SHIP.CENTER.y,
       }, // planet is in the center
       offsetRadiusMax: SHIP.OFFSET.MAX_RADIUS,
       offsetSpeed: SHIP.OFFSET.SPEED,
     };
+    // this.formula = {
+    //   exhaustEnd: new QuadraticFormula(
+    //     {x: 0, y:0 },
+    //     {x: SHIP.BACKPEDAL, y: -500 }
+    //   )
+    // }
   }
 
   move() {
@@ -555,8 +585,11 @@ class Ship extends Body {
 
     const lineLenX = -280 * (scrollPercent - 0.25) + 280; // 280
     const inverseLenX = 2 * (280 - lineLenX);
-    const end = Math.pow(scrollPercent, 2) * 300;
+    // const exhaustEnd = this.formula.exhaustEnd.calc(scrollPercent)
+    const exhaustEnd = Math.pow(scrollPercent, 2) * 300;
     const width = 5; // (scrollPercent > 0.9) ? (scrollPercent - 0.9) * H / 2 + 5 : 5
+    const quadraticPointWidth = 5; // this can only be changed once the lineLen is 0
+    // const quadraticPointWidth = (scrollPercent > 0.6) ? (H / 2) * (scrollPercent - 0.6) + width : width;
 
     const grd = this.ctx.createLinearGradient(0, 0, 0, H);
     grd.addColorStop(0, SHIP.COLORS.EXHAUST_EDGE);
@@ -566,13 +599,13 @@ class Ship extends Body {
     this.ctx.beginPath();
     this.ctx.moveTo(pos.x, pos.y - width);
     this.ctx.lineTo(pos.x + lineLenX, pos.y - width);
-    this.ctx.quadraticCurveTo(W - inverseLenX, pos.y - width, W - end, 0);
+    this.ctx.quadraticCurveTo(W - inverseLenX, pos.y - quadraticPointWidth, W - exhaustEnd, 0);
     this.ctx.lineTo(2 * W, 0);
     this.ctx.lineTo(2 * W, H);
-    this.ctx.lineTo(W - end, H);
+    this.ctx.lineTo(W - exhaustEnd, H);
     this.ctx.quadraticCurveTo(
       W - inverseLenX,
-      pos.y + width,
+      pos.y + quadraticPointWidth,
       pos.x + lineLenX,
       pos.y + width
     );
