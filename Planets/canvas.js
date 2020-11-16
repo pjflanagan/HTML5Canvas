@@ -429,9 +429,9 @@ class Planet extends Body {
 
   draw() {
     this.drawTrail();
-    this.drawRing(-1);
+    // this.drawRing(-1);
     this.drawSpectrum();
-    this.drawRing(1);
+    // this.drawRing(1);
   }
 
   drawRing(dir) {
