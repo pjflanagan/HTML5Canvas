@@ -618,7 +618,8 @@ const SHIP = {
     BODY: "#EEE",
     SHADOW: "#0004",
   },
-  BACKPEDAL: 0.08 // proportion scroll percent
+  BACKPEDAL: 0.08, // proportion scroll percent
+  EXHAUST_LENGTH: 0.2
 };
 
 class Ship extends Body {
@@ -635,6 +636,7 @@ class Ship extends Body {
       }, // planet is in the center
       offsetRadiusMax: SHIP.OFFSET.MAX_RADIUS,
       offsetSpeed: SHIP.OFFSET.SPEED,
+      exhaustLength: SHIP.EXHAUST_LENGTH * W
     };
     // this.formula = {
     //   exhaustEnd: new QuadraticFormula(
@@ -669,11 +671,12 @@ class Ship extends Body {
   drawExhaust() {
     const { pos } = this.state;
     const { scrollPercent, W, H } = this.canvas;
+    const { exhaustLength } = this.prop;
 
-    const lineLenX = -280 * (scrollPercent - SHIP.BACKPEDAL) + 280; // 280
-    const inverseLenX = 2 * (280 - lineLenX);
+    const lineLenX = -exhaustLength * (scrollPercent - SHIP.BACKPEDAL) + exhaustLength;
+    const inverseLenX = 2 * (exhaustLength - lineLenX);
     // const exhaustEnd = this.formula.exhaustEnd.calc(scrollPercent)
-    const exhaustEnd = Math.pow(scrollPercent, 2) * 300;
+    const exhaustEnd = Math.pow(scrollPercent, 2) * exhaustLength;
     const width = 5; // (scrollPercent > 0.9) ? (scrollPercent - 0.9) * H / 2 + 5 : 5
     const quadraticPointWidth = 5; // this can only be changed once the lineLen is 0
     // const quadraticPointWidth = (scrollPercent > 0.6) ? (H / 2) * (scrollPercent - 0.6) + width : width;
