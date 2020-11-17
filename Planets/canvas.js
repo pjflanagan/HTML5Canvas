@@ -8,12 +8,12 @@ const CANVAS = {
 
 
 class Canvas {
-  constructor() { // TODO: make this take some page props like scrollLength
+  constructor() { // TODO: make this take some page props like (W, H, scrollLength)
     const canvas = document.getElementById("pix");
     this.ctx = canvas.getContext("2d");
 
     // properties
-    this.W = window.innerWidth,
+    this.W = window.innerWidth;
     this.H = window.innerHeight;
     canvas.width = this.W;
     canvas.height = this.H;
@@ -242,8 +242,7 @@ class Body {
     };
   }
 
-  // TODO: extrapolate this a litte, we will also be changing this with
-  // the distance scrolled down the page
+
   moveBody(shift) {
     // move to a point at a random and angle from center
     if (this.hasReachedOffset()) {
@@ -357,12 +356,19 @@ const PLANET = {
     SPEED: 0.1,
     MAX_RADIUS: 40,
   },
-  SCROLL_SHIFT_RATE: 6
+  SCROLL_SHIFT_RATE: 6,
+  RING: {
+    GAP: 30,
+    COUNT: { min: 14, max: 24 },
+    START_ANGLE: { min: Math.PI / 6, max: 5 * Math.PI / 6},
+    RATE: Math.PI / 1000
+  }
 };
 
 class Planet extends Body {
   constructor(space, layer, id) {
     super(space, layer, id);
+    this.drawRing = this.drawRing.bind(this);
   }
 
   setup() {
@@ -380,6 +386,27 @@ class Planet extends Body {
     };
     Random.insertRandom(this.prop.colorSpectrum, new Color());
     this.setupColors();
+    this.setupRing();
+  }
+
+  setupRing() {
+    this.prop.ringAngleCenter = Random.prop(PLANET.RING.START_ANGLE);
+    this.prop.rings = [];
+    const ringCount = Random.prop(PLANET.RING.COUNT);
+    const color = new Color();
+    const toColor = new Color();
+    const ringSpectrum = color.makeSpectrum(toColor, ringCount);
+    const ringGap = Random.int(6,12);
+    for(let i = 0; i < ringSpectrum.length; ++i){
+      this.prop.rings.push({
+        color: ringSpectrum[i],
+        offsetY: i * ringGap + PLANET.RING.GAP,
+        lineWidth: 1
+      });
+    }
+
+    this.state.ringAngle = this.prop.ringAngleCenter;
+    this.state.ringAngleInc = 0;
   }
 
   move() {
@@ -390,44 +417,66 @@ class Planet extends Body {
       y: mouseShift.y + scrollShift.y,
     });
     this.moveColors();
-    // TODO: this.moveRing
+    this.moveRing()
+  }
+
+
+  moveRing() {
+    // wiggle the ring angle back and forth a little bit
+    // set the ring angle based on the scroll and wiggling
+    const { scrollPercent } = this.canvas;
+    const scrollOffsetAngle = - Math.PI / 6 * scrollPercent;
+    this.state.ringAngleInc += PLANET.RING.RATE;
+    const wiggleAngle = Math.sin(this.state.ringAngleInc) * 0.2
+    this.state.ringAngle = wiggleAngle + scrollOffsetAngle + this.prop.ringAngleCenter;
   }
 
   draw() {
     this.drawTrail();
     this.drawSpectrum();
-    // this.drawRing();
+    this.drawRing();
   }
 
   drawRing() {
     const { scrollPercent } = this.canvas;
     const { radius } = this.prop;
     const { x, y } = this.state.pos;
-    const angle = Math.PI * scrollPercent + Math.PI / 4;
-    const offset = {
-      x: radius/2 - 120*scrollPercent,
-      // dx: use a multiplier on the x diff to make them the same at 0 and further apart at the peaks
-      y: radius // Y is constant or it'll look weird
-    };
+    const angle = this.state.ringAngle;
+
     // TODO: we also need to move the x,y radius to pass over the planet
-    // we need to calculate the angle of intersection for each ring part
-    // https://www.analyzemath.com/EllipseProblems/ellipse_intersection.html
-    // but to fill this we will have to use some time of ellipseTo 
-    // https://stackoverflow.com/questions/14169234/the-relation-of-the-bezier-curve-and-ellipse
-    // to get it to flip to the other side we would have to switch either the angles or the anti-clockwise
     // if x is less than zero and then reset x to be abs(x) before we draw
-    this.ctx.beginPath();
-    this.ctx.ellipse(x, y, offset.x - 20, offset.y + 160, angle, Math.PI / 4, - Math.PI / 4)
-    this.ctx.strokeStyle = "#FFF";
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.ellipse(x, y, offset.x - 25, offset.y + 60, angle, Math.PI / 4, - Math.PI / 4)
-    this.ctx.strokeStyle = "#FFF";
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.ellipse(x, y, offset.x - 30, offset.y + 40, angle, Math.PI / 4, - Math.PI / 4)
-    this.ctx.strokeStyle = "#FFF";
-    this.ctx.stroke();
+    // to get it to flip to the other side we would have to switch either the angles or the anti-clockwise
+    
+    this.prop.rings.forEach((ring, i) => {
+      const offset = {
+        x: radius/2 - 120*scrollPercent + i,
+        // dx: use a multiplier on the x diff to make them the same at 0 and further apart at the peaks
+        y: radius + ring.offsetY
+      };
+      const intersection = ellipseCircleIntersection({
+        eRadx: offset.x,
+        eRady: offset.y,
+        cRad: radius
+      });
+      this.ctx.beginPath();
+      this.ctx.ellipse(x, y, offset.x, offset.y, angle, intersection[0].theta, intersection[1].theta)
+      this.ctx.strokeStyle = ring.color.toStringA(0.8);
+      this.ctx.lineWidth = ring.lineWidth;
+      this.ctx.stroke();
+    });
+
+    // this.ctx.beginPath();
+    // this.ctx.ellipse(x, y, offset.x - 20, offset.y + 160, angle, Math.PI / 4, - Math.PI / 4)
+    // this.ctx.strokeStyle = "#FFF";
+    // this.ctx.stroke();
+    // this.ctx.beginPath();
+    // this.ctx.ellipse(x, y, offset.x - 25, offset.y + 60, angle, Math.PI / 4, - Math.PI / 4)
+    // this.ctx.strokeStyle = "#FFF";
+    // this.ctx.stroke();
+    // this.ctx.beginPath();
+    // this.ctx.ellipse(x, y, offset.x - 30, offset.y + 40, angle, Math.PI / 4, - Math.PI / 4)
+    // this.ctx.strokeStyle = "#FFF";
+    // this.ctx.stroke();
 
   }
 }
@@ -461,7 +510,7 @@ class Moon extends Body {
     // unchanging props
     const radius = Random.prop2(MOON.RADIUS, shorterSide);
     const minX =
-      (this.layer > 5) ? SHIP.CENTER.x * this.canvas.H + radius * 2 : MOON.CENTER.x.min * W;
+      (this.layer > 5) ? SHIP.CENTER.x * this.canvas.H + radius * 3 : MOON.CENTER.x.min * W;
     this.prop = {
       center: {
         x: Random.int(minX, W - radius * 2),
@@ -569,7 +618,7 @@ const SHIP = {
     BODY: "#EEE",
     SHADOW: "#0004",
   },
-  BACKPEDAL: 0.25 // proportion scroll percent
+  BACKPEDAL: 0.08 // proportion scroll percent
 };
 
 class Ship extends Body {
@@ -621,7 +670,7 @@ class Ship extends Body {
     const { pos } = this.state;
     const { scrollPercent, W, H } = this.canvas;
 
-    const lineLenX = -280 * (scrollPercent - 0.25) + 280; // 280
+    const lineLenX = -280 * (scrollPercent - SHIP.BACKPEDAL) + 280; // 280
     const inverseLenX = 2 * (280 - lineLenX);
     // const exhaustEnd = this.formula.exhaustEnd.calc(scrollPercent)
     const exhaustEnd = Math.pow(scrollPercent, 2) * 300;
