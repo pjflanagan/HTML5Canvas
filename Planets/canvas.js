@@ -92,7 +92,7 @@ class Canvas {
   }
 
   drawFrame() {
-    this.space.drawBackground(); // TODO: space can be considered a body
+    this.space.drawBackground();
     this.bodies.forEach((body) => {
       body.move();
       body.draw();
@@ -145,10 +145,8 @@ class Space {
   drawBackground() {
     this.ctx.beginPath();
     this.ctx.rect(0, 0, this.canvas.W, this.canvas.H);
-    this.ctx.fillStyle = "#1c1c1c"; // "#faead0";
+    this.ctx.fillStyle = "#1c1c1c";
     this.ctx.fill();
-
-    // TODO: more interesting stuff here as well
   }
 }
 
@@ -379,7 +377,7 @@ class Planet extends Body {
     this.prop = {
       center: { x: this.canvas.W / 2, y: this.canvas.H / 2 }, // planet is in the center
       radius: Random.prop2(PLANET.RADIUS, this.canvas.H),
-      colorSpectrum: color.makeSpectrum(toColor, PLANET.COLORS), // TODO: use random predefined count
+      colorSpectrum: color.makeSpectrum(toColor, PLANET.COLORS),
       offsetRadiusMax: PLANET.OFFSET.MAX_RADIUS,
       offsetSpeed: PLANET.OFFSET.SPEED,
       scrollShiftRate: PLANET.SCROLL_SHIFT_RATE
@@ -445,11 +443,11 @@ class Planet extends Body {
 
     // TODO: we also need to move the x,y radius to pass over the planet
     // if x is less than zero and then reset x to be abs(x) before we draw
-    // to get it to flip to the other side we would have to switch either the angles or the anti-clockwise
+    // to get it to flip to the other side we would draw intersection[2 and 3]?
     
     this.prop.rings.forEach((ring, i) => {
-      const offset = {
-        x: radius/2 - 120*scrollPercent + i,
+      const offset = { // TODO: offset should be calculated based on circle in z direction?
+        x: radius/2 - 120*scrollPercent + i, // TODO: make linear equation for this
         // dx: use a multiplier on the x diff to make them the same at 0 and further apart at the peaks
         y: radius + ring.offsetY
       };
@@ -464,28 +462,14 @@ class Planet extends Body {
       this.ctx.lineWidth = ring.lineWidth;
       this.ctx.stroke();
     });
-
-    // this.ctx.beginPath();
-    // this.ctx.ellipse(x, y, offset.x - 20, offset.y + 160, angle, Math.PI / 4, - Math.PI / 4)
-    // this.ctx.strokeStyle = "#FFF";
-    // this.ctx.stroke();
-    // this.ctx.beginPath();
-    // this.ctx.ellipse(x, y, offset.x - 25, offset.y + 60, angle, Math.PI / 4, - Math.PI / 4)
-    // this.ctx.strokeStyle = "#FFF";
-    // this.ctx.stroke();
-    // this.ctx.beginPath();
-    // this.ctx.ellipse(x, y, offset.x - 30, offset.y + 40, angle, Math.PI / 4, - Math.PI / 4)
-    // this.ctx.strokeStyle = "#FFF";
-    // this.ctx.stroke();
-
   }
 }
 
 // MOON ---------------------------------------------------------------------------------------------
 
 const MOON = {
-  RADIUS: { min: 0.02, max: 0.06 }, // 0.01 0.06
-  COLORS: 3, // TODO: make this a range
+  RADIUS: { min: 0.02, max: 0.06 },
+  COLORS: 3,
   OFFSET: {
     SPEED: 0.1,
     MAX_RADIUS: 40,
@@ -514,7 +498,7 @@ class Moon extends Body {
     this.prop = {
       center: {
         x: Random.int(minX, W - radius * 2),
-        y: Random.int(0, H), // TODO: make sure this isn't near the space ship or behind the planet too much
+        y: Random.int(0, H),
       },
       radius,
       colorSpectrum: color.makeSpectrum(toColor, MOON.COLORS),
