@@ -68,8 +68,6 @@ function isClose(a, b, diff) {
 
 // GRID
 
-// https://www.redblobgames.com/grids/hexagons/
-
 function generateGrid(W, H) {
   const grid = [];
 
@@ -95,47 +93,6 @@ function generateGrid(W, H) {
   }
 
   return grid;
-}
-
-class GridPoint {
-  constructor(grid, pos, originPoint = undefined) {
-    this.grid = grid;
-    this.pos = pos;
-    this.neighbors = [];
-    if (originPoint) {
-      this.neighbors.push(originPoint);
-    }
-  }
-
-  setDot(newDot) {
-    this.dot = newDot;
-    this.dot.setTo(this.pos);
-  }
-
-  movePoint() {
-    const emptyNeighbor = this.getRandomEmptyNeighbor();
-    emptyNeighbor.setPoint(this.dot);
-    this.dot = undefined;
-  }
-
-  createNeighbors() {
-    // points should only have 3 neighbors
-    // find the neighbors that already exist in the gird
-    // append NEW neighbors to grid
-    // set all existing neighbors here
-  }
-
-  hasEmptyNeighbor() {
-
-  }
-
-  getRandomEmptyNeighbor() {
-
-  }
-
-  getRandomNeighbor() {
-
-  }
 }
 
 // WORLD -------------------------------------------------------------------------------------------
@@ -171,20 +128,22 @@ class World {
   // ANIMATE
 
   run() {
-    window.requestAnimationFrame(this.animate.bind(this))
+    this.animate();
   }
 
   animate() {
     this.drawBackground();
+    this.dots = [];
+    this.initDots();
     this.drawDots();
-    window.requestAnimationFrame(this.animate.bind(this))
+    setTimeout(this.animate.bind(this), 180);
   }
 
   // DRAW
 
   drawBackground() {
     this.ctx.rect(0, 0, this.W, this.H);
-    this.ctx.fillStyle = "#0e1126";
+    this.ctx.fillStyle = "#14307a";
     this.ctx.fill();
   }
 
@@ -228,7 +187,7 @@ class Dot {
   draw() {
     this.ctx.beginPath();
     this.ctx.arc(this.pos.x, this.pos.y, DOT.SIZE, 0, Math.TWO_PI, false);
-    this.ctx.fillStyle = '#d1f7bc';
+    this.ctx.fillStyle = '#1876a8';
     this.ctx.fill();
   }
 }
