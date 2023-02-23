@@ -2,7 +2,7 @@
 
 A collection of animations made using an HTML5 canvas for fun.
 
-- [2022 Planets](http://pjflanagan.github.io/HTML5Canvas/Dots)
+- [2022 Dots](http://pjflanagan.github.io/HTML5Canvas/Dots)
 - [2020 Planets](http://pjflanagan.github.io/HTML5Canvas/Planets)
 - [2020 Orbits](http://pjflanagan.github.io/HTML5Canvas/Orbits)
 - [2020 Riata](http://pjflanagan.github.io/HTML5Canvas/Riata)
